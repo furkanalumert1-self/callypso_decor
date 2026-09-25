@@ -10,21 +10,62 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { LanguageToggle } from "@/components/ui/language-toggle";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 /**
- * Login / signup with a DEMO BYPASS. Supabase isn't connected in this kit, so
- * submitting (or "Continue with demo") just drops you into the live demo
- * dashboard. Wire Supabase via /setup to make these forms do real auth.
+ * Login / signup. With Supabase env vars set, the email form does real
+ * email/password auth; without them it's a DEMO BYPASS that drops you into the
+ * demo dashboard. "Continue with demo" always bypasses.
  */
 export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const { ui, t, lang } = useLang();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
 
   function enter(e?: React.FormEvent) {
     e?.preventDefault();
     setLoading(true);
     setTimeout(() => router.push("/dashboard"), 450);
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    const supabase = getSupabase();
+    if (!supabase) return enter(e);
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
+    setLoading(true);
+    setMessage(null);
+
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setLoading(false);
+        setMessage({ tone: "error", text: `${ui.authFailed} (${error.message})` });
+        return;
+      }
+      router.push("/dashboard");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: String(form.get("name") ?? "") },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    });
+    setLoading(false);
+    if (error) {
+      setMessage({ tone: "error", text: error.message });
+    } else if (data.session) {
+      router.push("/dashboard");
+    } else {
+      setMessage({ tone: "info", text: ui.checkEmail });
+    }
   }
 
   const isLogin = mode === "login";
@@ -89,23 +130,27 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
             </h2>
           </div>
 
-          {/* Social (decorative in demo) */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={enter} className="gap-2">
-              <GoogleGlyph /> Google
-            </Button>
-            <Button variant="outline" onClick={enter} className="gap-2">
-              <GithubGlyph /> GitHub
-            </Button>
-          </div>
+          {/* Social (decorative in demo; hidden once real auth is on) */}
+          {!isSupabaseConfigured && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" onClick={enter} className="gap-2">
+                  <GoogleGlyph /> Google
+                </Button>
+                <Button variant="outline" onClick={enter} className="gap-2">
+                  <GithubGlyph /> GitHub
+                </Button>
+              </div>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            {ui.orContinueWith} {ui.email.toLowerCase()}
-            <span className="h-px flex-1 bg-border" />
-          </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                {ui.orContinueWith} {ui.email.toLowerCase()}
+                <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
 
-          <form onSubmit={enter} className="space-y-4">
+          <form onSubmit={submit} className="space-y-4">
             {!isLogin && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">{ui.fullName}</Label>
@@ -114,17 +159,29 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
             )}
             <div className="space-y-1.5">
               <Label htmlFor="email">{ui.email}</Label>
-              <Input id="email" name="email" type="email" placeholder="you@company.com" defaultValue="demo@demo.app" />
+              <Input id="email" name="email" type="email" placeholder="you@company.com" defaultValue={isSupabaseConfigured ? undefined : "demo@demo.app"} required={isSupabaseConfigured} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">{ui.password}</Label>
-              <Input id="password" name="password" type="password" placeholder="••••••••" defaultValue="demodemo" />
+              <Input id="password" name="password" type="password" placeholder="••••••••" defaultValue={isSupabaseConfigured ? undefined : "demodemo"} required={isSupabaseConfigured} minLength={isSupabaseConfigured ? 6 : undefined} />
             </div>
             <Button type="submit" disabled={loading} className="w-full gap-2">
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {isLogin ? ui.signIn : ui.getStarted}
               {!loading && <ArrowRight className="h-4 w-4" />}
             </Button>
+            {message && (
+              <p
+                role={message.tone === "error" ? "alert" : "status"}
+                className={
+                  message.tone === "error"
+                    ? "rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                    : "rounded-lg bg-success/15 px-3 py-2 text-xs text-foreground"
+                }
+              >
+                {message.text}
+              </p>
+            )}
           </form>
 
           <button
@@ -135,7 +192,7 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
           </button>
 
           <p className="rounded-lg bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
-            {ui.demoNote}
+            {isSupabaseConfigured ? ui.liveNote : ui.demoNote}
           </p>
 
           <p className="text-center text-sm text-muted-foreground">

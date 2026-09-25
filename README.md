@@ -15,8 +15,12 @@ Bu sürüm bir **demo**dur:
 - Oda görselleri AI ile üretilmez; hepsi satır içi **SVG** çizimlerdir.
 - Projeler, istatistikler ve kullanıcı yorumları **örnek verilerdir**
   (`lib/demo/data.ts`, `app/(marketing)/page.tsx`).
-- Gerçek **AI üretimi, kimlik doğrulama (auth) ve backend bağlı değildir**;
-  giriş/kayıt ekranları demo modunda herhangi bir e-posta/şifreyi kabul eder.
+- Gerçek **AI üretimi ve backend bağlı değildir**; panel verileri örnektir.
+- **Giriş/kayıt:** `NEXT_PUBLIC_SUPABASE_URL` ve `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  tanımlıysa e-posta/şifre ile gerçek Supabase doğrulaması yapılır (kayıtta
+  e-posta onayı istenir). Tanımlı değilse ekranlar demo modunda herhangi bir
+  e-posta/şifreyi kabul eder. "Demo ile devam et" her zaman demoya girer;
+  panel sayfaları henüz oturum kontrolü yapmaz.
 
 Pazarlama sayfasındaki rakamlar ve vaatler örnek metindir, doğrulanmış sonuç
 değildir.
