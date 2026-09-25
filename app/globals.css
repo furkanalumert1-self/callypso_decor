@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ODA — warm, earthy, editorial. LIGHT. Everything is oklch(L C H); to recolor,
+   mostly change H. BRAND HUE ≈ 40 (terracotta / clay). Secondary serif accent
+   hue ≈ 150 (sage). A neutral warm-paper background tinted toward the clay.
+   ─────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: var(--font-sans-app), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-app), ui-serif, Georgia, serif;
+  --font-mono: var(--font-mono-app), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-xs: 0.5rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.25rem;
+
+  /* Warm paper — NOT pure white. Tinted toward the clay. */
+  --color-background: oklch(98.4% 0.012 60);
+  --color-foreground: oklch(26% 0.03 40);
+
+  --color-muted: oklch(96.4% 0.014 55);
+  --color-muted-foreground: oklch(52% 0.03 45);
+
+  --color-border: oklch(91% 0.018 55);
+  --color-input: oklch(91% 0.018 55);
+  --color-ring: oklch(58% 0.15 40);
+
+  --color-card: oklch(99.3% 0.006 60);
+  --color-card-foreground: oklch(26% 0.03 40);
+
+  --color-popover: oklch(99.5% 0.005 60);
+  --color-popover-foreground: oklch(26% 0.03 40);
+
+  /* Brand accent — terracotta / clay. Change H to recolor the whole app. */
+  --color-primary: oklch(60% 0.15 40);
+  --color-primary-foreground: oklch(99% 0.005 60);
+
+  --color-accent: oklch(60% 0.15 40);
+  --color-accent-foreground: oklch(99% 0.005 60);
+
+  --color-secondary: oklch(95% 0.02 55);
+  --color-secondary-foreground: oklch(30% 0.035 40);
+
+  --color-destructive: oklch(58% 0.19 25);
+  --color-destructive-foreground: oklch(99% 0.005 60);
+
+  --color-warning: oklch(80% 0.14 75);
+  --color-warning-foreground: oklch(30% 0.05 55);
+
+  --color-success: oklch(62% 0.11 150);
+  --color-success-foreground: oklch(99% 0.005 60);
+
+  --color-info: oklch(64% 0.1 230);
+  --color-info-foreground: oklch(99% 0.005 60);
+
+  /* Serif-italic accent ink — sage green, the complementary signature. */
+  --color-serif: oklch(50% 0.1 150);
+
+  /* Sidebar — deep, warm clay-brown ink. The signature surface. */
+  --color-sidebar: oklch(26% 0.04 45);
+  --color-sidebar-foreground: oklch(93% 0.014 60);
+  --color-sidebar-muted: oklch(72% 0.025 50);
+  --color-sidebar-active: oklch(58% 0.14 40);
+  --color-sidebar-border: oklch(35% 0.035 45);
+
+  /* Signature gradients. */
+  --grad-brand: linear-gradient(140deg, oklch(66% 0.15 48) 0%, oklch(55% 0.16 35) 100%);
+  --grad-hero: linear-gradient(135deg, oklch(97.5% 0.022 60) 0%, oklch(95% 0.045 45) 52%, oklch(94.5% 0.05 150) 100%);
+
+  /* Four soft pastel tiles for KPI cards. Earthy spread. */
+  --grad-tile-1: linear-gradient(140deg, oklch(95% 0.045 45) 0%, oklch(88% 0.1 40) 100%);
+  --grad-tile-2: linear-gradient(140deg, oklch(95% 0.04 150) 0%, oklch(88% 0.09 150) 100%);
+  --grad-tile-3: linear-gradient(140deg, oklch(95% 0.045 75) 0%, oklch(88% 0.1 70) 100%);
+  --grad-tile-4: linear-gradient(140deg, oklch(95% 0.035 25) 0%, oklch(88% 0.08 20) 100%);
+
+  /* Soft warm shadows → shadow-soft / shadow-pop utilities. */
+  --shadow-soft: 0 1px 1px oklch(40% 0.05 40 / 0.05), 0 5px 18px oklch(40% 0.05 40 / 0.07);
+  --shadow-pop: 0 1px 2px oklch(40% 0.05 40 / 0.06), 0 14px 36px oklch(40% 0.05 40 / 0.12);
+}
+
+.dark {
+  --color-background: oklch(19% 0.018 45);
+  --color-foreground: oklch(94% 0.012 60);
+
+  --color-muted: oklch(24% 0.02 45);
+  --color-muted-foreground: oklch(70% 0.02 50);
+
+  --color-border: oklch(30% 0.024 45);
+  --color-input: oklch(30% 0.024 45);
+  --color-ring: oklch(64% 0.14 40);
+
+  --color-card: oklch(22% 0.02 45);
+  --color-card-foreground: oklch(94% 0.012 60);
+
+  --color-popover: oklch(22% 0.02 45);
+  --color-popover-foreground: oklch(94% 0.012 60);
+
+  --color-secondary: oklch(27% 0.024 45);
+  --color-secondary-foreground: oklch(92% 0.012 60);
+
+  --color-serif: oklch(70% 0.11 150);
+
+  --color-sidebar: oklch(15% 0.018 45);
+  --color-sidebar-foreground: oklch(91% 0.012 60);
+  --color-sidebar-border: oklch(28% 0.024 45);
+
+  --grad-hero: linear-gradient(135deg, oklch(25% 0.035 45) 0%, oklch(23% 0.04 150) 100%);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01";
+  letter-spacing: -0.006em;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--color-primary) 26%, transparent);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+  border: 2px solid var(--color-background);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted-foreground); }
+
+/* ── Editorial type helpers ───────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.display-accent {
+  font-family: var(--font-display);
+  font-style: italic;
+  letter-spacing: -0.018em;
+  color: var(--color-serif);
+}
+.label-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10.5px;
+}
+
+.shadow-soft { box-shadow: var(--shadow-soft); }
+.shadow-pop { box-shadow: var(--shadow-pop); }
+
+/* ── Life: floating orbs, pulse, entrances ────────────────────────────────── */
+.blob { position: absolute; filter: blur(60px); opacity: 0.5; pointer-events: none; border-radius: 999px; }
+
+@keyframes drift { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(10px,-12px) rotate(2deg); } }
+.drift { animation: drift 11s ease-in-out infinite; }
+
+@keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.pulse-dot { animation: pulseDot 1.8s infinite; }
+
+@keyframes floatUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.animate-float-up { animation: floatUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Staggered entrance — add .rise and an inline animation-delay. */
+@keyframes rise { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+.rise { animation: rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Infinite logo/word marquee. */
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { display: flex; width: max-content; animation: marquee 34s linear infinite; }
+
+/* Slow float for hero cards. */
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.floaty { animation: floaty 6s ease-in-out infinite; }
+
+/* Highlighter underline for hero words. */
+.hl { background-image: linear-gradient(transparent 60%, color-mix(in oklch, var(--color-serif) 42%, transparent) 60%); background-repeat: no-repeat; }
+.hl-primary { background-image: linear-gradient(transparent 60%, color-mix(in oklch, var(--color-primary) 28%, transparent) 60%); background-repeat: no-repeat; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .drift, .pulse-dot, .marquee, .floaty, .animate-float-up { animation: none; }
+}
