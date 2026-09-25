@@ -71,3 +71,83 @@ export async function analyzeRoom(imageDataUrl: string): Promise<RoomAnalysis | 
     return null;
   }
 }
+
+export interface StagingCheck {
+  structure_preserved: boolean;
+  changes: string[];
+}
+
+const CHECK_SCHEMA = {
+  type: "object",
+  properties: {
+    structure_preserved: {
+      type: "boolean",
+      description: "True if every door, doorway, window, balcony door, radiator and wall is still in the same place with the same shape, and the camera viewpoint is the same.",
+    },
+    changes: {
+      type: "array",
+      items: { type: "string" },
+      description: "Short Turkish phrases for each architectural change found (e.g. 'sol duvardaki kapı kaldırılmış'). Empty if none. Ignore furniture, decor, paint and lighting.",
+    },
+  },
+  required: ["structure_preserved", "changes"],
+  additionalProperties: false,
+} as const;
+
+function imageBlock(dataUrl: string) {
+  const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  return { type: "image" as const, source: { type: "base64" as const, media_type: match[1] as "image/jpeg", data: match[2] } };
+}
+
+/**
+ * Server-only: Claude compares the original photo with the staged result and
+ * reports whether the architecture survived. Pixel metrics can't tell staging
+ * clutter from a redrawn room; this can. Null when unavailable.
+ */
+export async function checkStaging(before: string, after: string): Promise<StagingCheck | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const a = imageBlock(before);
+  const b = imageBlock(after);
+  if (!a || !b) return null;
+
+  try {
+    const client = new Anthropic();
+    const response = await client.beta.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      thinking: { type: "adaptive" },
+      output_config: { effort: "low", format: { type: "json_schema", schema: CHECK_SCHEMA } },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Image 1 — the original, empty room:" },
+            a,
+            { type: "text", text: "Image 2 — the same room after virtual staging:" },
+            b,
+            {
+              type: "text",
+              text:
+                "Virtual staging may only add furniture and decor. Compare the permanent architecture: doors and doorways, windows " +
+                "(including the number and layout of panes), balcony doors, radiators, built-ins, walls, ceiling and the camera viewpoint. " +
+                "Is it the same room? Ignore furniture, rugs, plants, art, curtains, paint colour and lighting.",
+            },
+          ],
+        },
+      ],
+    });
+
+    if (response.stop_reason === "refusal") return null;
+    const text = response.content.find((blk) => blk.type === "text");
+    if (!text || text.type !== "text") return null;
+    const parsed = JSON.parse(text.text) as StagingCheck;
+    return { structure_preserved: parsed.structure_preserved, changes: parsed.changes.slice(0, 6) };
+  } catch (error) {
+    if (error instanceof Anthropic.APIError) console.warn(`Staging check skipped: ${error.status} ${error.message}`);
+    else console.warn("Staging check skipped:", error);
+    return null;
+  }
+}

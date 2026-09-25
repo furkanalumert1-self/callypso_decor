@@ -1,5 +1,5 @@
 import { styles } from "@/lib/demo/data";
-import { analyzeRoom } from "@/lib/room-analysis";
+import { analyzeRoom, checkStaging } from "@/lib/room-analysis";
 
 /**
  * POST /api/generate — virtually stage a room photo while keeping the room.
@@ -8,6 +8,7 @@ import { analyzeRoom } from "@/lib/room-analysis";
  * 1. (ANTHROPIC_API_KEY) Claude lists the room's fixed architecture.
  * 2. (FAL_KEY) FLUX Kontext edits the photo — an instruction-following editor
  *    that keeps walls, openings and camera, unlike plain image-to-image.
+ * 3. (ANTHROPIC_API_KEY) Claude compares before/after and flags architectural drift.
  * Without FAL_KEY → demo mode: waits 1.5s and returns { demo: true }.
  */
 export const maxDuration = 60;
@@ -46,7 +47,8 @@ export async function POST(req: Request) {
       ? "Add fitting furniture, rug, lighting, plants, textiles and wall art. You may repaint the walls and refinish the floor to suit the style."
       : "Only add fitting furniture, rug, lighting, plants, textiles and wall art.",
     "Keep the room itself identical: same camera position, angle, lens and framing; same walls, ceiling, windows, doors and radiators in the same places.",
-    "Do not add, remove, move or resize any window, door, doorway or wall. Do not change the room's proportions.",
+    "Do not add, remove, move or resize any window, door, doorway or wall, and keep each window's pane layout. Do not change the room's proportions.",
+    "Leave the doorways and the path to any balcony door clear; don't place furniture in front of doors.",
     analysis?.fixed_elements.length ? `These must stay exactly as they are: ${analysis.fixed_elements.join("; ")}.` : "",
     analysis && !renovate ? `Keep the floor: ${analysis.floor}.` : "",
     analysis ? `Camera: ${analysis.camera}.` : "",
@@ -80,7 +82,9 @@ export async function POST(req: Request) {
     if (!img.ok) return Response.json({ error: `Could not download the result (${img.status})` }, { status: 502 });
     const type = img.headers.get("content-type") ?? "image/jpeg";
     const b64 = Buffer.from(await img.arrayBuffer()).toString("base64");
-    return Response.json({ demo: false, image: `data:${type};base64,${b64}`, preserved: analysis?.fixed_elements ?? [] });
+    const result = `data:${type};base64,${b64}`;
+    const check = await checkStaging(image, result);
+    return Response.json({ demo: false, image: result, preserved: analysis?.fixed_elements ?? [], check });
   } catch {
     return Response.json({ error: "Could not reach the image service" }, { status: 502 });
   }

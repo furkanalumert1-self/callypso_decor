@@ -10,7 +10,7 @@ import type { RoomStyle } from "@/components/room-scene";
 import { useLang } from "@/components/i18n/language-provider";
 import { roomLiving, roomBedroom, roomKitchen, roomStudy, roomKids, roomBath, styles } from "@/lib/demo/data";
 import { createProject } from "@/lib/data";
-import { fileToDataUrl, demoRestyle, downloadImage, alignTo, structureScore, STRUCTURE_WARN_BELOW } from "@/lib/image";
+import { fileToDataUrl, demoRestyle, downloadImage, alignTo } from "@/lib/image";
 import { cn } from "@/lib/utils";
 
 const ROOMS = [roomLiving, roomBedroom, roomKitchen, roomStudy, roomKids, roomBath];
@@ -26,7 +26,7 @@ export function NewRoomDialog({
   const [style, setStyle] = useState<RoomStyle>(defaultStyle ?? "iskandinav");
   const [place, setPlace] = useState("");
   const [mode, setMode] = useState<"furnish" | "renovate">("furnish");
-  const [result, setResult] = useState<{ image: string; demo: boolean; score: number | null; preserved: string[] } | null>(null);
+  const [result, setResult] = useState<{ image: string; demo: boolean; check: { structure_preserved: boolean; changes: string[] } | null; preserved: string[] } | null>(null);
   const [variant, setVariant] = useState(0);
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -48,8 +48,8 @@ export function NewRoomDialog({
       saved: "Projelere kaydedildi", savedMemory: "Kaydedildi (tarayıcı depolaması dolu — yalnızca bu oturumda kalır)",
       badFile: "Lütfen 15 MB'den küçük bir görsel seç", readFail: "Fotoğraf okunamadı", dlFail: "İndirme başarısız", noPhoto: "Önce bir fotoğraf yükle",
       demoTag: "Demo", mode: "Dönüşüm", furnish: "Sadece döşe (oda aynen kalır)", renovate: "Duvar ve zemini de yenile",
-      kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş olabilir (pencere/kapı). Yeniden üretmeyi dene.", driftToast: "Sonuç odanın yapısını değiştirmiş olabilir",
-      preserved: "Korunan öğeler", score: "Yapı benzerliği",
+      kept: "Oda yapısı korundu (Claude kontrolü)", drift: "Oda yapısı değişmiş — yeniden üretmeyi dene:", driftToast: "Sonuç odanın yapısını değiştirmiş",
+      preserved: "Korunması istenen öğeler",
     },
     en: {
       title: "New room", drop: "Drag a photo of your room here, or browse", hint: "JPG, PNG or WEBP · up to 15 MB",
@@ -59,8 +59,8 @@ export function NewRoomDialog({
       saved: "Saved to projects", savedMemory: "Saved (browser storage is full — kept for this session only)",
       badFile: "Please pick an image under 15 MB", readFail: "Couldn't read that photo", dlFail: "Download failed", noPhoto: "Upload a photo first",
       demoTag: "Demo", mode: "Transformation", furnish: "Furnish only (room stays as is)", renovate: "Also refresh walls & floor",
-      kept: "Room structure preserved", drift: "The room's structure may have changed (windows/doors). Try regenerating.", driftToast: "The result may have changed the room's structure",
-      preserved: "Preserved elements", score: "Structure match",
+      kept: "Room structure preserved (checked by Claude)", drift: "The room's structure changed — try regenerating:", driftToast: "The result changed the room's structure",
+      preserved: "Elements asked to keep",
     },
   }[lang];
 
@@ -95,18 +95,21 @@ export function NewRoomDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: before, style, room: ROOMS[room].en, mode, variant: nextVariant }),
       });
-      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string; preserved?: string[] };
+      const data = (await res.json().catch(() => ({}))) as {
+        demo?: boolean; image?: string; error?: string; preserved?: string[];
+        check?: { structure_preserved: boolean; changes: string[] } | null;
+      };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       if (data.demo) {
         const image = await demoRestyle(before, styleDef.palette, `${m.demoTag} · ${t(styleDef.name)}`, nextVariant);
-        setResult({ image, demo: true, score: null, preserved: [] });
+        setResult({ image, demo: true, check: null, preserved: [] });
         toast(m.demo, "info");
       } else {
-        // Pixel-align the result to the upload so the slider lines up, then check the room survived.
+        // Pixel-align the result to the upload so the slider lines up.
         const image = await alignTo(data.image!, before);
-        const score = await structureScore(before, image);
-        setResult({ image, demo: false, score, preserved: data.preserved ?? [] });
-        if (score !== null && score < STRUCTURE_WARN_BELOW) toast(m.driftToast, "error");
+        const check = data.check ?? null;
+        setResult({ image, demo: false, check, preserved: data.preserved ?? [] });
+        if (check && !check.structure_preserved) toast(m.driftToast, "error");
         else toast(m.done);
       }
       setVariant(nextVariant);
@@ -155,23 +158,27 @@ export function NewRoomDialog({
             <CompareSlider key={result.image} before={before} after={result.image} labels={{ before: m.before, after: m.after }} />
           </div>
         ) : null}
-        {result && before && !result.demo && result.score !== null && (
+        {result && before && !result.demo && (result.check || result.preserved.length > 0) && (
           <div
             className={cn(
               "flex items-start gap-2 rounded-lg px-3 py-2 text-xs",
-              result.score !== null && result.score < STRUCTURE_WARN_BELOW ? "bg-destructive/10 text-destructive" : "bg-success/12 text-foreground",
+              result.check && !result.check.structure_preserved ? "bg-destructive/10 text-destructive" : "bg-muted text-foreground",
             )}
           >
-            {result.score !== null && result.score < STRUCTURE_WARN_BELOW ? (
+            {result.check && !result.check.structure_preserved ? (
               <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            ) : (
+            ) : result.check ? (
               <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
-            )}
+            ) : null}
             <div className="space-y-1">
-              <p className="font-medium">
-                {result.score !== null && result.score < STRUCTURE_WARN_BELOW ? m.drift : m.kept}
-                <span className="ml-1 font-normal opacity-75">· {m.score} {lang === "tr" ? `%${Math.round(result.score * 100)}` : `${Math.round(result.score * 100)}%`}</span>
-              </p>
+              {result.check && (
+                <p className="font-medium">
+                  {result.check.structure_preserved ? m.kept : m.drift}
+                  {!result.check.structure_preserved && result.check.changes.length > 0 && (
+                    <span className="font-normal"> {result.check.changes.join(" · ")}</span>
+                  )}
+                </p>
+              )}
               {result.preserved.length > 0 && (
                 <p className="text-muted-foreground">{m.preserved}: {result.preserved.join(" · ")}</p>
               )}
