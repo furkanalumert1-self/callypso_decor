@@ -28,14 +28,14 @@ export default function CatalogPage() {
       add: "Ürün ekle", place: "Salona yerleştir", search: "Ürün adı ya da SKU ara…", all: "Tümü", actions: "İşlemler",
       edit: "Düzenle", del: "Sil", delTitle: "Ürün silinsin mi?", delBody: "Ürün katalogdan kalıcı olarak kaldırılacak.", cancel: "Vazgeç",
       deleted: "Ürün silindi", emptyTitle: "Katalog boş", emptyBody: "İlk ürününü fotoğraf, fiyat ve ölçüleriyle ekle.",
-      noMatch: "Eşleşen ürün yok", clear: "Filtreleri temizle",
+      noMatch: "Eşleşen ürün yok", clear: "Filtreleri temizle", noPrice: "Fiyat yok",
     },
     en: {
       title: "Catalogue", sub: "Your furniture products. Place any of them exactly as they are into a customer's room photo and share the quote.",
       add: "Add product", place: "Place in room", search: "Search name or SKU…", all: "All", actions: "Actions",
       edit: "Edit", del: "Delete", delTitle: "Delete this product?", delBody: "The product will be permanently removed from the catalogue.", cancel: "Cancel",
       deleted: "Product deleted", emptyTitle: "Catalogue is empty", emptyBody: "Add your first product with a photo, price and dimensions.",
-      noMatch: "No matching products", clear: "Clear filters",
+      noMatch: "No matching products", clear: "Clear filters", noPrice: "No price",
     },
   }[lang];
 
@@ -113,7 +113,11 @@ export default function CatalogPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">{t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}</p>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="font-display text-base font-semibold tabular-nums">{formatTry(p.price, lang)}</span>
+                  {p.price > 0 ? (
+                    <span className="font-display text-base font-semibold tabular-nums">{formatTry(p.price, lang)}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">{m.noPrice}</span>
+                  )}
                   {dims(p) && <span className="text-[11px] text-muted-foreground">{dims(p)} cm</span>}
                 </div>
               </div>

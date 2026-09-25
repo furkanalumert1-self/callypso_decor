@@ -26,10 +26,22 @@ type InProduct = { name?: unknown; category?: unknown; width?: unknown; depth?: 
 const isImage = (v: unknown): v is string => typeof v === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(v) && v.length < MAX_IMAGE_CHARS;
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.round(v) : undefined);
 
-function where(spot?: { x?: unknown; y?: unknown }) {
+/** Where an interior designer would put it when the user didn't mark a spot. */
+const DEFAULT_PLACE: Record<ProductCategory, string> = {
+  sofa: "with its back against the most suitable wall, facing into the room",
+  storage: "against a wall, facing into the room",
+  bed: "with its headboard against the most suitable wall",
+  armchair: "angled towards the seating area, near a wall or the window",
+  table: "in front of the seating area, centred on it",
+  rug: "centred in the seating area, flat on the floor",
+  lamp: "beside the seating area",
+  decor: "where it naturally belongs in the room",
+};
+
+function where(category: ProductCategory, spot?: { x?: unknown; y?: unknown }) {
   const x = typeof spot?.x === "number" ? spot.x : null;
   const y = typeof spot?.y === "number" ? spot.y : null;
-  if (x === null || y === null) return "wherever it fits most naturally in the room";
+  if (x === null || y === null) return DEFAULT_PLACE[category];
   const side = x < 0.33 ? "on the left side of the room" : x > 0.66 ? "on the right side of the room" : "in the centre of the room";
   const depth = y < 0.55 ? "towards the back wall" : y > 0.78 ? "in the foreground" : "in the middle of the floor";
   return `${side}, ${depth} (at about ${Math.round(x * 100)}% from the left and ${Math.round(y * 100)}% from the top of the photo)`;
@@ -71,7 +83,7 @@ export async function POST(req: Request) {
 
   const lines = products.map((p, i) => {
     const dims = [p.width && `${p.width} cm wide`, p.depth && `${p.depth} cm deep`, p.height && `${p.height} cm high`].filter(Boolean).join(" × ");
-    return `- Image ${i + 2}: "${p.name}" (${categoryLabel[p.category].en.toLowerCase()}${dims ? `, ${dims}` : ""}) — place it ${where(p.spot)}.`;
+    return `- Image ${i + 2}: "${p.name}" (${categoryLabel[p.category].en.toLowerCase()}${dims ? `, ${dims}` : ""}) — place it ${where(p.category, p.spot)}.`;
   });
 
   const prompt = [
@@ -79,7 +91,9 @@ export async function POST(req: Request) {
     "Place exactly these products into the room from image 1:",
     ...lines,
     "Reproduce every product faithfully: identical shape, proportions, colour, fabric or material, legs and details as in its catalogue photo. Do not substitute, restyle or recolour them, and do not add any other furniture.",
-    "Scale each product realistically from its dimensions and the size of the room, stand it on the floor with correct perspective, contact shadows and lighting that matches the room.",
+    "Scale each product realistically from its dimensions and the size of the room.",
+    "Re-render each product from this room photo's camera viewpoint, not from the catalogue photo's angle: rotate it to sit naturally in the room, with the backs of sofas, beds and storage parallel to the nearest wall.",
+    "Re-light each product to match the room: the same light direction (from the room's windows), colour temperature and exposure. Cast soft floor shadows consistent with that light plus contact shadows under the legs. It must not look pasted in or studio-lit.",
     "The output must be image 1 with the products added: same camera position, angle and framing; same walls, ceiling, floor, windows (with their pane layout), doors and radiators in the same places. Leave doorways clear.",
     analysis?.fixed_elements.length ? `These must stay exactly as they are: ${analysis.fixed_elements.join("; ")}.` : "",
     typeof note === "string" && note.trim() ? `Additional placement instructions from the user (may be in Turkish): ${note.trim().slice(0, 300)}` : "",

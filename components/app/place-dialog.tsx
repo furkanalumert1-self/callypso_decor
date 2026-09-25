@@ -54,7 +54,7 @@ export function PlaceDialog({
       needRoom: "Önce salon fotoğrafı yükle", needProduct: "En az bir ürün seç", saved: "Projelere kaydedildi", copied: "Teklif özeti panoya kopyalandı",
       dlFail: "İndirme başarısız", badFile: "Lütfen 15 MB'den küçük bir görsel seç", kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş:",
       faithful: "katalogla uyumlu", unfaithful: "katalogdan farklı", driftToast: "Sonuç odayı ya da ürünleri değiştirmiş olabilir — yeniden üretmeyi dene",
-      demoTag: "Demo · ürün yerleştirme", place: "Ürün yerleştirme", summary: "Callypso Decor — ürün yerleştirme teklifi",
+      demoTag: "Demo · ürün yerleştirme", place: "Ürün yerleştirme", summary: "Callypso Decor — ürün yerleştirme teklifi", noPrice: "Fiyat girilmedi",
     },
     en: {
       title: "Place in room", s1: "1 · Room photo", upload: "Upload the customer's room photo", fromProjects: "or pick from projects",
@@ -66,7 +66,7 @@ export function PlaceDialog({
       needRoom: "Upload a room photo first", needProduct: "Pick at least one product", saved: "Saved to projects", copied: "Quote summary copied",
       dlFail: "Download failed", badFile: "Please pick an image under 15 MB", kept: "Room structure preserved", drift: "Room structure changed:",
       faithful: "matches catalogue", unfaithful: "differs from catalogue", driftToast: "The result may have changed the room or the products — try regenerating",
-      demoTag: "Demo · product placement", place: "Product placement", summary: "Callypso Decor — product placement quote",
+      demoTag: "Demo · product placement", place: "Product placement", summary: "Callypso Decor — product placement quote", noPrice: "No price set",
     },
   }[lang];
 
@@ -175,8 +175,8 @@ export function PlaceDialog({
   async function share() {
     const lines = [
       m.summary,
-      ...chosen.map((p) => `• ${p.name}${p.sku ? ` (${p.sku})` : ""} — ${formatTry(p.price, lang)}`),
-      `${m.total}: ${formatTry(total, lang)}`,
+      ...chosen.map((p) => `• ${p.name}${p.sku ? ` (${p.sku})` : ""}${p.price > 0 ? ` — ${formatTry(p.price, lang)}` : ""}`),
+      ...(total > 0 ? [`${m.total}: ${formatTry(total, lang)}`] : []),
     ];
     await copyText(lines.join("\n"));
     toast(m.copied);
@@ -357,13 +357,15 @@ export function PlaceDialog({
                 <span className="min-w-0 flex-1 truncate">
                   {p.name} <span className="text-xs text-muted-foreground">· {t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}</span>
                 </span>
-                <span className="tabular-nums">{formatTry(p.price, lang)}</span>
+                <span className={cn("tabular-nums", p.price <= 0 && "text-xs text-muted-foreground")}>{p.price > 0 ? formatTry(p.price, lang) : m.noPrice}</span>
               </div>
             ))}
-            <div className="flex justify-between bg-muted/50 px-3 py-2 text-sm font-semibold">
-              <span>{m.total}</span>
-              <span className="tabular-nums">{formatTry(total, lang)}</span>
-            </div>
+            {total > 0 && (
+              <div className="flex justify-between bg-muted/50 px-3 py-2 text-sm font-semibold">
+                <span>{m.total}</span>
+                <span className="tabular-nums">{formatTry(total, lang)}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
