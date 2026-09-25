@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Layers, Heart, CircleCheckBig, MoreHorizontal, Pencil, Share2, Download, Trash2, CheckCircle2 } from "lucide-react";
+import { Layers, Heart, Sofa, CircleCheckBig, MoreHorizontal, Pencil, Share2, Download, Trash2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -24,12 +24,12 @@ export function ProjectCard({ p }: { p: Project }) {
   const [busy, setBusy] = useState(false);
 
   const m = {
-    tr: { before: "Önce", after: "Sonra", variants: "varyant", saved: "favori", actions: "İşlemler", rename: "Yeniden adlandır",
+    tr: { before: "Önce", after: "Sonra", variants: "varyant", saved: "favori", products: "ürün", actions: "İşlemler", rename: "Yeniden adlandır",
       approve: "Onayla", unapprove: "Onayı kaldır", share: "Bağlantıyı paylaş", download: "İndir", del: "Sil",
       renameTitle: "Projeyi yeniden adlandır", save: "Kaydet", cancel: "Vazgeç", delTitle: "Proje silinsin mi?",
       delBody: "Bu proje ve görselleri kalıcı olarak silinecek.", renamed: "Proje güncellendi", approved: "Proje onaylandı",
       unapproved: "Onay kaldırıldı", copied: "Bağlantı panoya kopyalandı", deleted: "Proje silindi", dlFail: "İndirme başarısız" },
-    en: { before: "Before", after: "After", variants: "variants", saved: "saved", actions: "Actions", rename: "Rename",
+    en: { before: "Before", after: "After", variants: "variants", saved: "saved", products: "products", actions: "Actions", rename: "Rename",
       approve: "Approve", unapprove: "Remove approval", share: "Share link", download: "Download", del: "Delete",
       renameTitle: "Rename project", save: "Save", cancel: "Cancel", delTitle: "Delete this project?",
       delBody: "This project and its images will be permanently deleted.", renamed: "Project updated", approved: "Project approved",
@@ -93,7 +93,13 @@ export function ProjectCard({ p }: { p: Project }) {
         <p className="truncate text-xs text-muted-foreground">{p.place}</p>
         <div className="mt-3 flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1"><Layers className="h-3.5 w-3.5" />{p.variants} {m.variants}</span>
-          <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{p.saved} {m.saved}</span>
+          {p.products?.length ? (
+            <span className="inline-flex items-center gap-1" title={p.products.map((x) => x.name).join(", ")}>
+              <Sofa className="h-3.5 w-3.5" />{p.products.length} {m.products}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{p.saved} {m.saved}</span>
+          )}
           {approved && <CircleCheckBig className="h-3.5 w-3.5 text-success" />}
           <Menu
             label={m.actions}

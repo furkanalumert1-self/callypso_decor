@@ -53,3 +53,8 @@ export function initials(name: string) {
     .toUpperCase()
     .slice(0, 2);
 }
+
+/** Turkish lira price, e.g. ₺18.900 (tr) / TRY 18,900 (en). */
+export function formatTry(amount: number, lang: "tr" | "en" = "tr") {
+  return new Intl.NumberFormat(lang === "tr" ? "tr-TR" : "en-US", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(amount);
+}

@@ -151,3 +151,92 @@ export async function checkStaging(before: string, after: string): Promise<Stagi
     return null;
   }
 }
+
+export interface PlacementCheck extends StagingCheck {
+  products: { name: string; faithful: boolean; note: string }[];
+}
+
+const PLACEMENT_SCHEMA = {
+  type: "object",
+  properties: {
+    ...CHECK_SCHEMA.properties,
+    products: {
+      type: "array",
+      description: "One entry per catalogue product, in the order given.",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          faithful: {
+            type: "boolean",
+            description: "True if the product is visible in the result and matches its catalogue photo in shape, proportions, colour, material and legs.",
+          },
+          note: { type: "string", description: "Short Turkish note on what differs or is missing; empty if faithful." },
+        },
+        required: ["name", "faithful", "note"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["structure_preserved", "changes", "products"],
+  additionalProperties: false,
+} as const;
+
+/**
+ * Server-only: checks a furniture placement — did the room survive, and does
+ * each placed item actually match the firm's catalogue photo? Null when
+ * unavailable.
+ */
+export async function checkPlacement(
+  before: string,
+  after: string,
+  products: { name: string; image: string }[],
+): Promise<PlacementCheck | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  const a = imageBlock(before);
+  const b = imageBlock(after);
+  const productBlocks = products.map((p) => ({ name: p.name, block: imageBlock(p.image) }));
+  if (!a || !b || productBlocks.some((p) => !p.block)) return null;
+
+  try {
+    const client = new Anthropic();
+    const response = await client.beta.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 4000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      thinking: { type: "adaptive" },
+      output_config: { effort: "low", format: { type: "json_schema", schema: PLACEMENT_SCHEMA } },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Original room photo:" },
+            a,
+            { type: "text", text: "Result after placing the catalogue products below into the room:" },
+            b,
+            ...productBlocks.flatMap((p, i) => [{ type: "text" as const, text: `Catalogue product ${i + 1}: "${p.name}"` }, p.block!]),
+            {
+              type: "text",
+              text:
+                "1) Compare the permanent architecture of the original and the result: doors and doorways, windows (number and layout of panes), " +
+                "balcony doors, radiators, built-ins, walls, ceiling and camera viewpoint. Ignore furniture, decor, paint and lighting. " +
+                "2) For each catalogue product, say whether it appears in the result and faithfully matches its catalogue photo " +
+                "(shape, proportions, colour, material, legs). A similar-looking but different product is not faithful.",
+            },
+          ],
+        },
+      ],
+    });
+
+    if (response.stop_reason === "refusal") return null;
+    const text = response.content.find((blk) => blk.type === "text");
+    if (!text || text.type !== "text") return null;
+    const parsed = JSON.parse(text.text) as PlacementCheck;
+    return { ...parsed, changes: parsed.changes.slice(0, 6) };
+  } catch (error) {
+    if (error instanceof Anthropic.APIError) console.warn(`Placement check skipped: ${error.status} ${error.message}`);
+    else console.warn("Placement check skipped:", error);
+    return null;
+  }
+}

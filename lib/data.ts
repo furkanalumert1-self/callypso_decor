@@ -14,20 +14,29 @@ import type { L } from "@/lib/i18n/config";
 import type { RoomStyle } from "@/components/room-scene";
 import { projects as seedProjects, styles, type Project as DemoProject, type ProjectStatus } from "@/lib/demo/data";
 import { getSupabase } from "@/lib/supabase/client";
+import { seedProducts, type Product } from "@/lib/demo/products";
+
+export type { Product };
 
 export interface Project extends DemoProject {
   /** Uploaded photo (data URL). Absent for the seeded SVG demo projects. */
   imageBefore?: string;
   /** Generated look (data URL or remote URL). */
   imageAfter?: string;
+  /** Catalogue products placed in this room (furniture-firm placements). */
+  products?: PlacedProduct[];
 }
 
+export interface PlacedProduct { id: string; name: string; sku: string; price: number }
+
 export type NewProject = Pick<Project, "room" | "place" | "style" | "status"> &
-  Partial<Pick<Project, "variants" | "saved" | "imageBefore" | "imageAfter">>;
+  Partial<Pick<Project, "variants" | "saved" | "imageBefore" | "imageAfter" | "products">>;
+
+export type NewProduct = Omit<Product, "id" | "createdAt">;
 
 export interface SessionUser { name: string; email: string; demo: boolean }
 
-type Store = { projects: Project[]; likes: string[] };
+type Store = { projects: Project[]; likes: string[]; products: Product[] };
 
 const STORE_KEY = "callypso-decor:data:v1";
 const SESSION_KEY = "callypso-decor:session:v1";
@@ -41,14 +50,16 @@ export const styleName = (style: RoomStyle): L =>
 let memory: Store | null = null;
 
 function seed(): Store {
-  return { projects: seedProjects.map((p) => ({ ...p })), likes: [] };
+  return { projects: seedProjects.map((p) => ({ ...p })), likes: [], products: seedProducts.map((p) => ({ ...p })) };
 }
 
 function readLocal(): Store {
   if (memory) return memory;
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    memory = raw ? (JSON.parse(raw) as Store) : seed();
+    const parsed = raw ? (JSON.parse(raw) as Partial<Store>) : null;
+    // Stores saved before the catalogue existed get the sample products.
+    memory = parsed ? { ...seed(), ...parsed, products: parsed.products ?? seed().products } : seed();
   } catch {
     memory = seed();
   }
@@ -80,20 +91,40 @@ const newId = () =>
 type Row = {
   id: string; room: L; place: string; style: RoomStyle; status: ProjectStatus;
   variants: number; saved: number; image_before: string | null; image_after: string | null; updated_at: string;
+  products: PlacedProduct[] | null;
 };
 
 const fromRow = (r: Row): Project => ({
   id: r.id, room: r.room, place: r.place, style: r.style, styleName: styleName(r.style), status: r.status,
   variants: r.variants, saved: r.saved, updated: r.updated_at,
   imageBefore: r.image_before ?? undefined, imageAfter: r.image_after ?? undefined,
+  products: r.products ?? undefined,
 });
 
-let supabaseBroken = false;
+type ProductRow = {
+  id: string; name: string; sku: string; category: Product["category"]; price: number;
+  width: number | null; depth: number | null; height: number | null; image: string; created_at: string;
+};
+
+const fromProductRow = (r: ProductRow): Product => ({
+  id: r.id, name: r.name, sku: r.sku, category: r.category, price: Number(r.price),
+  width: r.width ?? undefined, depth: r.depth ?? undefined, height: r.height ?? undefined, image: r.image, createdAt: r.created_at,
+});
+
+const toProductRow = (p: Partial<NewProduct>) => ({
+  ...(p.name !== undefined && { name: p.name }), ...(p.sku !== undefined && { sku: p.sku }),
+  ...(p.category !== undefined && { category: p.category }), ...(p.price !== undefined && { price: p.price }),
+  ...(p.image !== undefined && { image: p.image }),
+  ...("width" in p && { width: p.width ?? null }), ...("depth" in p && { depth: p.depth ?? null }), ...("height" in p && { height: p.height ?? null }),
+});
+
+/** Tables that errored this session (e.g. not created yet) → use the local store for them. */
+const brokenTables = new Set<string>();
 
 /** The signed-in Supabase client, or null → use the local store. */
-async function remote() {
+async function remote(table = "projects") {
   const supabase = getSupabase();
-  if (!supabase || supabaseBroken) return null;
+  if (!supabase || brokenTables.has(table)) return null;
   const { data } = await supabase.auth.getSession();
   return data.session ? supabase : null;
 }
@@ -110,7 +141,7 @@ export async function listProjects(): Promise<Project[]> {
     const { data, error } = await sb.from("projects").select("*").order("updated_at", { ascending: false });
     if (!error && data) return (data as Row[]).map(fromRow);
     // table missing / RLS error → stay local for this session
-    if (!supabaseBroken) { supabaseBroken = true; notify(); }
+    if (!brokenTables.has("projects")) { brokenTables.add("projects"); notify(); }
   }
   return [...readLocal().projects].sort((a, b) => b.updated.localeCompare(a.updated));
 }
@@ -125,6 +156,7 @@ export async function createProject(input: NewProject): Promise<{ project: Proje
         room: input.room, place: input.place, style: input.style, status: input.status,
         variants: input.variants ?? 1, saved: input.saved ?? 0,
         image_before: input.imageBefore ?? null, image_after: input.imageAfter ?? null,
+        products: input.products ?? null,
       })
       .select()
       .single();
@@ -135,7 +167,7 @@ export async function createProject(input: NewProject): Promise<{ project: Proje
   const project: Project = {
     id: newId(), room: input.room, place: input.place, style: input.style, styleName: styleName(input.style),
     status: input.status, variants: input.variants ?? 1, saved: input.saved ?? 0, updated: now,
-    imageBefore: input.imageBefore, imageAfter: input.imageAfter,
+    imageBefore: input.imageBefore, imageAfter: input.imageAfter, products: input.products,
   };
   const store = readLocal();
   const persisted = writeLocal({ ...store, projects: [project, ...store.projects] });
@@ -169,6 +201,56 @@ export async function deleteProject(id: string) {
   }
   const store = readLocal();
   writeLocal({ ...store, projects: store.projects.filter((p) => p.id !== id) });
+}
+
+/* ── Product catalogue (furniture firms) ──────────────────────────────────── */
+
+export async function listProducts(): Promise<Product[]> {
+  const sb = await remote("products");
+  if (sb) {
+    const { data, error } = await sb.from("products").select("*").order("created_at", { ascending: false });
+    if (!error && data) return (data as ProductRow[]).map(fromProductRow);
+    if (!brokenTables.has("products")) { brokenTables.add("products"); notify(); }
+  }
+  return [...readLocal().products].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function createProduct(input: NewProduct): Promise<{ product: Product; persisted: boolean }> {
+  const sb = await remote("products");
+  if (sb) {
+    const { data, error } = await sb.from("products").insert(toProductRow(input)).select().single();
+    if (error) throw new Error(error.message);
+    notify();
+    return { product: fromProductRow(data as ProductRow), persisted: true };
+  }
+  const product: Product = { ...input, id: newId(), createdAt: new Date().toISOString() };
+  const store = readLocal();
+  const persisted = writeLocal({ ...store, products: [product, ...store.products] });
+  return { product, persisted };
+}
+
+export async function updateProduct(id: string, patch: Partial<NewProduct>) {
+  const sb = await remote("products");
+  if (sb) {
+    const { error } = await sb.from("products").update(toProductRow(patch)).eq("id", id);
+    if (error) throw new Error(error.message);
+    notify();
+    return;
+  }
+  const store = readLocal();
+  writeLocal({ ...store, products: store.products.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
+}
+
+export async function deleteProduct(id: string) {
+  const sb = await remote("products");
+  if (sb) {
+    const { error } = await sb.from("products").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    notify();
+    return;
+  }
+  const store = readLocal();
+  writeLocal({ ...store, products: store.products.filter((p) => p.id !== id) });
 }
 
 /* ── Gallery likes (always local — the gallery is sample content) ─────────── */
@@ -219,7 +301,7 @@ export async function signOut() {
   try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
   const supabase = getSupabase();
   if (supabase) await supabase.auth.signOut();
-  supabaseBroken = false;
+  brokenTables.clear();
   notify();
 }
 
@@ -250,6 +332,19 @@ export function useProjects() {
   useEffect(load, [load]);
   useDataChange(load);
   return { projects, loading };
+}
+
+export function useProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(() => {
+    listProducts()
+      .then(setProducts)
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(load, [load]);
+  useDataChange(load);
+  return { products, loading };
 }
 
 const NO_LIKES: string[] = [];

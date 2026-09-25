@@ -91,6 +91,7 @@ export const appConfig: AppConfig = {
     { label: { tr: "Projeler", en: "Projects" }, href: "/projects", icon: "folder-open" },
     { label: { tr: "Stiller", en: "Styles" }, href: "/styles", icon: "palette" },
     { label: { tr: "Galeri", en: "Gallery" }, href: "/gallery", icon: "layout-grid" },
+    { label: { tr: "Katalog", en: "Catalogue" }, href: "/catalog", icon: "sofa" },
     { label: { tr: "Ayarlar", en: "Settings" }, href: "/settings", icon: "settings" },
   ],
 

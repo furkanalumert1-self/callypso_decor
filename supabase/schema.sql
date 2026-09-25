@@ -51,3 +51,36 @@ drop trigger if exists on_auth_user_created_seed_projects on auth.users;
 create trigger on_auth_user_created_seed_projects
   after insert on auth.users
   for each row execute function public.seed_sample_projects();
+
+-- ── Furniture catalogue (for furniture firms) ──────────────────────────────
+-- Products a firm places into customers' room photos. Safe to re-run.
+
+alter table public.projects add column if not exists products jsonb;   -- [{ id, name, sku, price }]
+
+create table if not exists public.products (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name        text not null,
+  sku         text not null default '',
+  category    text not null check (category in ('sofa','armchair','table','rug','lamp','storage','bed','decor')),
+  price       numeric(12,2) not null default 0,                -- TRY
+  width       int,                                             -- cm
+  depth       int,
+  height      int,
+  image       text not null,                                   -- data URL of the product photo
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists products_user_created_idx on public.products (user_id, created_at desc);
+
+alter table public.products enable row level security;
+
+drop policy if exists "products_select_own" on public.products;
+drop policy if exists "products_insert_own" on public.products;
+drop policy if exists "products_update_own" on public.products;
+drop policy if exists "products_delete_own" on public.products;
+
+create policy "products_select_own" on public.products for select using (auth.uid() = user_id);
+create policy "products_insert_own" on public.products for insert with check (auth.uid() = user_id);
+create policy "products_update_own" on public.products for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "products_delete_own" on public.products for delete using (auth.uid() = user_id);
