@@ -117,3 +117,101 @@ export async function copyText(text: string) {
     ta.remove();
   }
 }
+
+/**
+ * Crop-and-resize `src` to exactly the pixel size of `ref` (object-cover), so a
+ * generated "after" lines up with the uploaded "before". Falls back to `src`
+ * when the image can't be read (e.g. a remote URL without CORS).
+ */
+export async function alignTo(src: string, ref: string): Promise<string> {
+  try {
+    const [img, base] = await Promise.all([loadImage(src), loadImage(ref)]);
+    const canvas = document.createElement("canvas");
+    canvas.width = base.naturalWidth;
+    canvas.height = base.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return src;
+    const scale = Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+    const w = img.naturalWidth * scale;
+    const h = img.naturalHeight * scale;
+    ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+    return canvas.toDataURL("image/jpeg", 0.88);
+  } catch {
+    return src;
+  }
+}
+
+/** Sobel edge magnitude + direction of an image drawn (object-cover) at `w`×`h`. */
+function edgeMap(img: HTMLImageElement, w: number, h: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  ctx.drawImage(img, (w - img.naturalWidth * scale) / 2, (h - img.naturalHeight * scale) / 2, img.naturalWidth * scale, img.naturalHeight * scale);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  const g = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) g[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+  const mag = new Float32Array(w * h);
+  const dir = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const gx = g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1] - g[i - w - 1] - 2 * g[i - 1] - g[i + w - 1];
+      const gy = g[i + w - 1] + 2 * g[i + w] + g[i + w + 1] - g[i - w - 1] - 2 * g[i - w] - g[i - w + 1];
+      mag[i] = Math.hypot(gx, gy);
+      dir[i] = Math.atan2(gy, gx);
+    }
+  }
+  return { mag, dir };
+}
+
+function percentile(values: Float32Array, p: number) {
+  const sorted = Float32Array.from(values).sort();
+  return sorted[Math.floor(sorted.length * p)];
+}
+
+/** Below this, the result likely redrew the room rather than staging it. */
+export const STRUCTURE_WARN_BELOW = 0.7;
+
+/**
+ * 0–1: how much of the room's architecture (strongest edges in the upper 60%
+ * of the "before" — windows, doors, wall and ceiling lines) reappears in the
+ * "after" at the same place with the same direction. Furniture mostly sits low
+ * in the frame, so it's excluded. Calibrated on a structure-preserving staging
+ * (~0.89) vs a result that invented new windows/doors (~0.52).
+ */
+export async function structureScore(before: string, after: string): Promise<number | null> {
+  try {
+    const [a, b] = await Promise.all([loadImage(before), loadImage(after)]);
+    const w = 192;
+    const h = Math.round((w * a.naturalHeight) / a.naturalWidth);
+    const eb = edgeMap(a, w, h);
+    const ea = edgeMap(b, w, h);
+    const rows = Math.round(h * 0.6);
+    const tb = percentile(eb.mag.subarray(0, rows * w), 0.9);
+    const ta = percentile(ea.mag.subarray(0, rows * w), 0.85);
+    const maxAngle = Math.PI / 6;
+    let total = 0;
+    let kept = 0;
+    for (let y = 2; y < rows; y++) {
+      for (let x = 2; x < w - 2; x++) {
+        const i = y * w + x;
+        if (eb.mag[i] < tb) continue;
+        total++;
+        search: for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const j = i + dy * w + dx;
+            if (ea.mag[j] < ta) continue;
+            let d = Math.abs(eb.dir[i] - ea.dir[j]) % Math.PI;
+            d = Math.min(d, Math.PI - d);
+            if (d < maxAngle) { kept++; break search; }
+          }
+        }
+      }
+    }
+    return total ? kept / total : null;
+  } catch {
+    return null;
+  }
+}

@@ -1,16 +1,16 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, Loader2, Download, RefreshCw, Save, ImageIcon } from "lucide-react";
+import { Upload, Loader2, Download, RefreshCw, Save, ImageIcon, ShieldCheck, TriangleAlert } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
-import { BeforeAfter } from "@/components/before-after";
+import { CompareSlider } from "@/components/app/compare-slider";
 import type { RoomStyle } from "@/components/room-scene";
 import { useLang } from "@/components/i18n/language-provider";
 import { roomLiving, roomBedroom, roomKitchen, roomStudy, roomKids, roomBath, styles } from "@/lib/demo/data";
 import { createProject } from "@/lib/data";
-import { fileToDataUrl, demoRestyle, downloadImage } from "@/lib/image";
+import { fileToDataUrl, demoRestyle, downloadImage, alignTo, structureScore, STRUCTURE_WARN_BELOW } from "@/lib/image";
 import { cn } from "@/lib/utils";
 
 const ROOMS = [roomLiving, roomBedroom, roomKitchen, roomStudy, roomKids, roomBath];
@@ -25,7 +25,8 @@ export function NewRoomDialog({
   const [room, setRoom] = useState(0);
   const [style, setStyle] = useState<RoomStyle>(defaultStyle ?? "iskandinav");
   const [place, setPlace] = useState("");
-  const [result, setResult] = useState<{ image: string; demo: boolean } | null>(null);
+  const [mode, setMode] = useState<"furnish" | "renovate">("furnish");
+  const [result, setResult] = useState<{ image: string; demo: boolean; score: number | null; preserved: string[] } | null>(null);
   const [variant, setVariant] = useState(0);
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -46,7 +47,9 @@ export function NewRoomDialog({
       before: "Önce", after: "Sonra", demo: "Demo sonucu — gerçek AI için FAL_KEY ekle", done: "Yeni görünüm hazır",
       saved: "Projelere kaydedildi", savedMemory: "Kaydedildi (tarayıcı depolaması dolu — yalnızca bu oturumda kalır)",
       badFile: "Lütfen 15 MB'den küçük bir görsel seç", readFail: "Fotoğraf okunamadı", dlFail: "İndirme başarısız", noPhoto: "Önce bir fotoğraf yükle",
-      demoTag: "Demo",
+      demoTag: "Demo", mode: "Dönüşüm", furnish: "Sadece döşe (oda aynen kalır)", renovate: "Duvar ve zemini de yenile",
+      kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş olabilir (pencere/kapı). Yeniden üretmeyi dene.", driftToast: "Sonuç odanın yapısını değiştirmiş olabilir",
+      preserved: "Korunan öğeler", score: "Yapı benzerliği",
     },
     en: {
       title: "New room", drop: "Drag a photo of your room here, or browse", hint: "JPG, PNG or WEBP · up to 15 MB",
@@ -55,7 +58,9 @@ export function NewRoomDialog({
       before: "Before", after: "After", demo: "Demo result — add FAL_KEY for real AI", done: "Your new look is ready",
       saved: "Saved to projects", savedMemory: "Saved (browser storage is full — kept for this session only)",
       badFile: "Please pick an image under 15 MB", readFail: "Couldn't read that photo", dlFail: "Download failed", noPhoto: "Upload a photo first",
-      demoTag: "Demo",
+      demoTag: "Demo", mode: "Transformation", furnish: "Furnish only (room stays as is)", renovate: "Also refresh walls & floor",
+      kept: "Room structure preserved", drift: "The room's structure may have changed (windows/doors). Try regenerating.", driftToast: "The result may have changed the room's structure",
+      preserved: "Preserved elements", score: "Structure match",
     },
   }[lang];
 
@@ -88,16 +93,23 @@ export function NewRoomDialog({
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: before, style, room: ROOMS[room].en, variant: nextVariant }),
+        body: JSON.stringify({ image: before, style, room: ROOMS[room].en, mode, variant: nextVariant }),
       });
-      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string; preserved?: string[] };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
-      const image = data.demo
-        ? await demoRestyle(before, styleDef.palette, `${m.demoTag} · ${t(styleDef.name)}`, nextVariant)
-        : data.image!;
-      setResult({ image, demo: !!data.demo });
+      if (data.demo) {
+        const image = await demoRestyle(before, styleDef.palette, `${m.demoTag} · ${t(styleDef.name)}`, nextVariant);
+        setResult({ image, demo: true, score: null, preserved: [] });
+        toast(m.demo, "info");
+      } else {
+        // Pixel-align the result to the upload so the slider lines up, then check the room survived.
+        const image = await alignTo(data.image!, before);
+        const score = await structureScore(before, image);
+        setResult({ image, demo: false, score, preserved: data.preserved ?? [] });
+        if (score !== null && score < STRUCTURE_WARN_BELOW) toast(m.driftToast, "error");
+        else toast(m.done);
+      }
       setVariant(nextVariant);
-      toast(data.demo ? m.demo : m.done, data.demo ? "info" : "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), "error");
     } finally {
@@ -140,9 +152,33 @@ export function NewRoomDialog({
         {/* upload / preview / result */}
         {result && before ? (
           <div className="overflow-hidden rounded-xl ring-1 ring-border">
-            <BeforeAfter key={result.image} style={style} images={{ before, after: result.image }} labels={{ before: m.before, after: m.after }} />
+            <CompareSlider key={result.image} before={before} after={result.image} labels={{ before: m.before, after: m.after }} />
           </div>
-        ) : before ? (
+        ) : null}
+        {result && before && !result.demo && result.score !== null && (
+          <div
+            className={cn(
+              "flex items-start gap-2 rounded-lg px-3 py-2 text-xs",
+              result.score !== null && result.score < STRUCTURE_WARN_BELOW ? "bg-destructive/10 text-destructive" : "bg-success/12 text-foreground",
+            )}
+          >
+            {result.score !== null && result.score < STRUCTURE_WARN_BELOW ? (
+              <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+            )}
+            <div className="space-y-1">
+              <p className="font-medium">
+                {result.score !== null && result.score < STRUCTURE_WARN_BELOW ? m.drift : m.kept}
+                <span className="ml-1 font-normal opacity-75">· {m.score} {lang === "tr" ? `%${Math.round(result.score * 100)}` : `${Math.round(result.score * 100)}%`}</span>
+              </p>
+              {result.preserved.length > 0 && (
+                <p className="text-muted-foreground">{m.preserved}: {result.preserved.join(" · ")}</p>
+              )}
+            </div>
+          </div>
+        )}
+        {result && before ? null : before ? (
           <div className="relative overflow-hidden rounded-xl ring-1 ring-border">
             {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
             <img src={before} alt={m.before} className="aspect-[4/3] w-full object-cover" />
@@ -191,6 +227,13 @@ export function NewRoomDialog({
             {styles.map((s) => (
               <button key={s.id} type="button" onClick={() => setStyle(s.id)} className={chip(style === s.id)}>{t(s.name)}</button>
             ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="label-mono text-muted-foreground">{m.mode}</p>
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => setMode("furnish")} className={chip(mode === "furnish")}>{m.furnish}</button>
+            <button type="button" onClick={() => setMode("renovate")} className={chip(mode === "renovate")}>{m.renovate}</button>
           </div>
         </div>
         <label className="block space-y-2">
