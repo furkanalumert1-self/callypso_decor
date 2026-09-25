@@ -7,6 +7,7 @@ import { Plus_Jakarta_Sans, Fraunces, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/components/i18n/language-provider";
+import { Toaster } from "@/components/ui/toast";
 import appConfig from "@/app.config";
 import { DEFAULT_LANG } from "@/lib/i18n/config";
 
@@ -48,7 +49,10 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground antialiased font-sans">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <LanguageProvider>{children}</LanguageProvider>
+          <LanguageProvider>
+            {children}
+            <Toaster />
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

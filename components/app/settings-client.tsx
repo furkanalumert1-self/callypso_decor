@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Icon } from "@/components/ui/icon";
 import { useLang } from "@/components/i18n/language-provider";
+import { toast } from "@/components/ui/toast";
 
 export function SettingsClient({ connected }: { connected: Record<string, boolean> }) {
   const { t, ui } = useLang();
@@ -62,8 +63,11 @@ export function SettingsClient({ connected }: { connected: Record<string, boolea
                   <CheckCircle2 className="h-4 w-4" /> {ui.connected}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                  <CircleDashed className="h-4 w-4" /> {ui.demoMode}
+                <span className="inline-flex items-center gap-3">
+                  <span className="hidden items-center gap-1.5 text-sm font-medium text-muted-foreground sm:inline-flex">
+                    <CircleDashed className="h-4 w-4" /> {ui.demoMode}
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => toast(ui.fullVersion, "info")}>{ui.connect}</Button>
                 </span>
               )}
             </div>
@@ -72,7 +76,7 @@ export function SettingsClient({ connected }: { connected: Record<string, boolea
       </Card>
 
       <div className="flex justify-end">
-        <Button>{ui.saveChanges}</Button>
+        <Button onClick={() => toast(ui.fullVersion, "info")}>{ui.saveChanges}</Button>
       </div>
     </div>
   );

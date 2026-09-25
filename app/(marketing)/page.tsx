@@ -14,6 +14,7 @@ import { LanguageToggle } from "@/components/ui/language-toggle";
 import { RoomScene, type RoomStyle } from "@/components/room-scene";
 import { BeforeAfter } from "@/components/before-after";
 import { useLang } from "@/components/i18n/language-provider";
+import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 const moduleIcons = [WandSparkles, Palette, ArrowLeftRight, Ruler, ShoppingBag, Users];
@@ -407,8 +408,11 @@ function RoomStack({ lang }: { lang: "tr" | "en" }) {
   );
 }
 
+/** Footer links that point at sections of this page; the rest are full-version pages. */
+const footAnchors: Record<string, string> = { "0-0": "#what", "0-1": "#styles", "0-4": "#pricing" };
+
 export default function OdaLanding() {
-  const { lang } = useLang();
+  const { lang, ui } = useLang();
   const c = content[lang];
   const [open, setOpen] = useState<number | null>(0);
   const [activeStyle, setActiveStyle] = useState<RoomStyle>("bohem");
@@ -1006,12 +1010,18 @@ export default function OdaLanding() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-              {c.footCols.map((col) => (
+              {c.footCols.map((col, ci) => (
                 <div key={col.h}>
                   <p className="label-mono mb-4 text-primary">{col.h}</p>
                   <ul className="space-y-2.5">
-                    {col.links.map((l) => (
-                      <li key={l}><a href="#" className="text-[13px] text-muted-foreground transition hover:text-foreground">{l}</a></li>
+                    {col.links.map((l, li) => (
+                      <li key={l}>
+                        {footAnchors[`${ci}-${li}`] ? (
+                          <a href={footAnchors[`${ci}-${li}`]} className="text-[13px] text-muted-foreground transition hover:text-foreground">{l}</a>
+                        ) : (
+                          <button type="button" onClick={() => toast(ui.fullVersion, "info")} className="text-left text-[13px] text-muted-foreground transition hover:text-foreground">{l}</button>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>

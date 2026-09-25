@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import type { RoomStyle } from "@/components/room-scene";
+import { NewRoomDialog } from "@/components/app/new-room-dialog";
 import { Button } from "@/components/ui/button";
 import { RoomScene } from "@/components/room-scene";
 import { BeforeAfter } from "@/components/before-after";
@@ -9,6 +12,7 @@ import { styles } from "@/lib/demo/data";
 
 export default function StylesPage() {
   const { lang, t } = useLang();
+  const [trying, setTrying] = useState<RoomStyle | null>(null);
   const m = {
     tr: { title: "Stiller", sub: "Bir his seç — Callypso Decor aynı odayı o stilin paleti, dokusu ve mobilya diliyle yeniden döşer.",
       before: "Önce", after: "Sonra", motifs: "Dokular", apply: "Bu stilde dene" },
@@ -41,7 +45,7 @@ export default function StylesPage() {
                 <p className="label-mono text-muted-foreground">{m.motifs}</p>
                 <p className="mt-1.5 text-[13px] text-foreground/80">{t(s.motifs)}</p>
               </div>
-              <Button variant="outline" className="mt-4 w-full gap-2">{m.apply} <ArrowRight className="h-4 w-4" /></Button>
+              <Button variant="outline" className="mt-4 w-full gap-2" onClick={() => setTrying(s.id)}>{m.apply} <ArrowRight className="h-4 w-4" /></Button>
             </div>
           </article>
         ))}
@@ -59,6 +63,7 @@ export default function StylesPage() {
           ))}
         </div>
       </div>
+      <NewRoomDialog open={trying !== null} onClose={() => setTrying(null)} defaultStyle={trying ?? undefined} />
     </div>
   );
 }

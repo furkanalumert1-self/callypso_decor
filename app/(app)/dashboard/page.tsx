@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowUpRight, Plus, Sparkles, Heart, ImagePlus, TrendingUp, ArrowLeftRight,
-  Layers, CircleCheckBig, Ruler, Check, Loader2, ShoppingBag, Wallet,
+  Layers, Ruler, Check, Loader2, ShoppingBag, Wallet,
   Bookmark, PieChart,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,14 @@ import { RoomScene, type RoomStyle } from "@/components/room-scene";
 import { BeforeAfter } from "@/components/before-after";
 import { useLang } from "@/components/i18n/language-provider";
 import {
-  activity, costMeta, costRows, gallery, kpis, looks14d, moodboards, projects,
-  reno, renderJobs, renoMeta, shopProducts, shopTotal, statusLabel, statusTone,
+  activity, costMeta, costRows, gallery, kpis, looks14d, moodboards, projects as demoProjects,
+  reno, renderJobs, renoMeta, shopProducts, shopTotal,
   studio, styleUsage, styles,
 } from "@/lib/demo/data";
 import { formatRelative } from "@/lib/utils";
+import { useProjects } from "@/lib/data";
+import { NewRoomDialog } from "@/components/app/new-room-dialog";
+import { ProjectCard, ProjectGridSkeleton } from "@/components/app/project-card";
 
 /* Looks-generated sparkline (last 14 days). */
 function Sparkline({ data }: { data: number[] }) {
@@ -44,7 +47,9 @@ function Sparkline({ data }: { data: number[] }) {
 
 export default function OdaDashboard() {
   const { lang, t } = useLang();
-  const featured = projects.find((p) => p.status === "approved") ?? projects[0];
+  const featured = demoProjects.find((p) => p.status === "approved") ?? demoProjects[0];
+  const { projects, loading } = useProjects();
+  const [creating, setCreating] = useState(false);
   const totalLooks = looks14d.reduce((a, b) => a + b, 0);
   const [activeReno, setActiveReno] = useState<RoomStyle>(reno[0].style);
 
@@ -103,7 +108,7 @@ export default function OdaDashboard() {
             </h1>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">{m.body}</p>
             <div className="mt-5">
-              <Link href="/projects"><Button size="lg" className="gap-2"><Plus className="h-4 w-4" /> {m.newRoom}</Button></Link>
+              <Button size="lg" className="gap-2" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {m.newRoom}</Button>
             </div>
             <div className="mt-auto grid grid-cols-3 gap-3 pt-7">
               {heroStats.map((s) => (
@@ -215,33 +220,12 @@ export default function OdaDashboard() {
           <Link href="/projects" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">{m.all} <ArrowUpRight className="h-3.5 w-3.5" /></Link>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <article key={p.id} className="group overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-pop">
-              <div className="relative">
-                {p.status === "uploaded" ? (
-                  <div className="relative">
-                    <RoomScene style={p.style} furnished={false} className="aspect-[4/3] w-full" />
-                    <span className="absolute left-2.5 top-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">{m.before}</span>
-                  </div>
-                ) : (
-                  <BeforeAfter style={p.style} labels={{ before: m.before, after: m.after }} />
-                )}
-                <Badge tone={statusTone[p.status]} className="absolute right-2.5 top-2.5 shadow-sm">{t(statusLabel[p.status])}</Badge>
-              </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate font-medium">{t(p.room)}</p>
-                  <span className="shrink-0 text-xs text-muted-foreground">{t(p.styleName)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{p.place}</p>
-                <div className="mt-3 flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><Layers className="h-3.5 w-3.5" />{p.variants} {m.variants}</span>
-                  <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" />{p.saved} {m.savedShort}</span>
-                  {p.status === "approved" && <CircleCheckBig className="ml-auto h-3.5 w-3.5 text-success" />}
-                </div>
-              </div>
-            </article>
-          ))}
+          {loading ? <ProjectGridSkeleton /> : projects.slice(0, 6).map((p) => <ProjectCard key={p.id} p={p} />)}
+          {!loading && !projects.length && (
+            <button type="button" onClick={() => setCreating(true)} className="col-span-full rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground hover:border-primary hover:text-primary">
+              <Plus className="mx-auto mb-2 h-5 w-5" /> {m.newRoom}
+            </button>
+          )}
         </div>
       </section>
 
@@ -334,11 +318,21 @@ export default function OdaDashboard() {
             <article key={`ba-${p.id}`} className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
               <div className="grid grid-cols-2">
                 <div className="relative border-r border-border">
-                  <RoomScene style={p.style} furnished={false} className="aspect-[4/3] w-full" />
+                  {p.imageBefore ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- stored data URL
+                    <img src={p.imageBefore} alt={m.before} className="aspect-[4/3] w-full object-cover" />
+                  ) : (
+                    <RoomScene style={p.style} furnished={false} className="aspect-[4/3] w-full" />
+                  )}
                   <span className="absolute left-2 top-2 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">{m.before}</span>
                 </div>
                 <div className="relative">
-                  <RoomScene style={p.style} className="aspect-[4/3] w-full" />
+                  {p.imageAfter ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- stored data URL / AI result
+                    <img src={p.imageAfter} alt={m.after} className="aspect-[4/3] w-full object-cover" />
+                  ) : (
+                    <RoomScene style={p.style} className="aspect-[4/3] w-full" />
+                  )}
                   <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">{m.after}</span>
                 </div>
               </div>
@@ -469,6 +463,7 @@ export default function OdaDashboard() {
           </ul>
         </div>
       </section>
+      <NewRoomDialog open={creating} onClose={() => setCreating(false)} />
     </div>
   );
 }

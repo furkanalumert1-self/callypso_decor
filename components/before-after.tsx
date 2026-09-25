@@ -17,17 +17,29 @@ export function BeforeAfter({
   aspect = "aspect-[4/3]",
   labels,
   defaultAfter = true,
+  images,
 }: {
   style: RoomStyle;
   className?: string;
   aspect?: string;
   labels: { before: string; after: string };
   defaultAfter?: boolean;
+  /** Real photos (uploaded before / generated after) instead of the SVG scene. */
+  images?: { before: string; after?: string };
 }) {
   const [after, setAfter] = useState(defaultAfter);
   return (
     <div className={cn("relative overflow-hidden", className)}>
-      <RoomScene style={style} furnished={after} className={cn(aspect, "w-full transition-opacity duration-300")} />
+      {images ? (
+        // eslint-disable-next-line @next/next/no-img-element -- data URLs / remote AI results
+        <img
+          src={after && images.after ? images.after : images.before}
+          alt={after ? labels.after : labels.before}
+          className={cn(aspect, "w-full object-cover")}
+        />
+      ) : (
+        <RoomScene style={style} furnished={after} className={cn(aspect, "w-full transition-opacity duration-300")} />
+      )}
       <button
         type="button"
         onClick={() => setAfter((v) => !v)}

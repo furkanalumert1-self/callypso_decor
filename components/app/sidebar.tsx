@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import appConfig from "@/app.config";
 import { Logo } from "@/components/ui/logo";
 import { Icon } from "@/components/ui/icon";
 import { useLang } from "@/components/i18n/language-provider";
 import { cn } from "@/lib/utils";
+import { signOut, useSession } from "@/lib/data";
+import { toast } from "@/components/ui/toast";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { t, ui } = useLang();
+  const router = useRouter();
+  const { user } = useSession();
+  const name = user?.name || ui.guest;
+  const initials = name.replace(/[^\p{L}\s]/gu, "").split(/\s+/).filter(Boolean).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <aside className="hidden bg-sidebar text-sidebar-foreground md:flex md:w-64 md:flex-col">
@@ -46,19 +52,25 @@ export function Sidebar() {
       <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
           <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm font-semibold">
-            AJ
+            {initials}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">Alex Jordan</p>
-            <p className="truncate text-xs text-sidebar-muted">{ui.account}</p>
+            <p className="truncate text-sm font-medium">{name}</p>
+            <p className="truncate text-xs text-sidebar-muted">{user?.email || ui.account}</p>
           </div>
-          <Link
-            href="/login"
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut();
+              toast(ui.loggedOut);
+              router.push("/login");
+            }}
             aria-label={ui.logout}
+            title={ui.logout}
             className="grid h-8 w-8 place-items-center rounded-md text-sidebar-muted transition-colors hover:bg-white/5 hover:text-sidebar-foreground"
           >
             <LogOut className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </div>
     </aside>

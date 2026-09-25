@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { setDemoSession } from "@/lib/data";
 
 /**
  * Login / signup. With Supabase env vars set, the email form does real
@@ -23,8 +24,13 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
 
+  /** Demo bypass: stores a demo session (name/email from the form when present). */
   function enter(e?: React.FormEvent) {
     e?.preventDefault();
+    const form = e?.currentTarget instanceof HTMLFormElement ? new FormData(e.currentTarget) : null;
+    const email = String(form?.get("email") || "demo@demo.app");
+    const name = String(form?.get("name") || "") || "Selin (demo)";
+    setDemoSession({ name, email });
     setLoading(true);
     setTimeout(() => router.push("/dashboard"), 450);
   }
