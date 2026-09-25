@@ -64,7 +64,8 @@ export function AuthScreen({ mode }: { mode: "login" | "signup" }) {
         </div>
 
         <p className="relative text-xs text-white/65">
-          © {appConfig.name} · {appConfig.domain}
+          © {appConfig.company} · {appConfig.name}
+          {appConfig.domain ? ` · ${appConfig.domain}` : ""}
         </p>
       </section>
 

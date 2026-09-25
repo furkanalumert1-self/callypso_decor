@@ -10,9 +10,9 @@ import { styles } from "@/lib/demo/data";
 export default function StylesPage() {
   const { lang, t } = useLang();
   const m = {
-    tr: { title: "Stiller", sub: "Bir his seç — Oda aynı odayı o stilin paleti, dokusu ve mobilya diliyle yeniden döşer.",
+    tr: { title: "Stiller", sub: "Bir his seç — Callypso Decor aynı odayı o stilin paleti, dokusu ve mobilya diliyle yeniden döşer.",
       before: "Önce", after: "Sonra", motifs: "Dokular", apply: "Bu stilde dene" },
-    en: { title: "Styles", sub: "Pick a feeling — Oda restyles the same room in that style's palette, texture and furniture language.",
+    en: { title: "Styles", sub: "Pick a feeling — Callypso Decor restyles the same room in that style's palette, texture and furniture language.",
       before: "Before", after: "After", motifs: "Materials", apply: "Try this style" },
   }[lang];
 

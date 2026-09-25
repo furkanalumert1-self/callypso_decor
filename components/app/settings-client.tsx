@@ -25,10 +25,12 @@ export function SettingsClient({ connected }: { connected: Record<string, boolea
             <Label>{ui.productName}</Label>
             <Input defaultValue={appConfig.name} readOnly />
           </div>
-          <div className="space-y-1.5">
-            <Label>{ui.domain}</Label>
-            <Input defaultValue={appConfig.domain} readOnly />
-          </div>
+          {appConfig.domain && (
+            <div className="space-y-1.5">
+              <Label>{ui.domain}</Label>
+              <Input defaultValue={appConfig.domain} readOnly />
+            </div>
+          )}
           <div className="space-y-1.5 sm:col-span-2">
             <Label>{ui.tagline}</Label>
             <Input defaultValue={t(appConfig.tagline)} readOnly />

@@ -1,6 +1,6 @@
 /**
- * Oda demo data — a week in the life of someone redesigning a home (and a
- * designer using Oda with clients). Labels are bilingual ({ tr, en }); pages
+ * Callypso Decor demo data — a week in the life of someone redesigning a home (and a
+ * designer using Callypso Decor with clients). Labels are bilingual ({ tr, en }); pages
  * resolve them to the active language. Room/project names stay as content.
  * Wire fal.ai + Anthropic (run /setup) to generate real before/after looks.
  *
@@ -77,10 +77,10 @@ export const kpis: DKpi[] = [
 export interface DActivity { id: string; who: string; action: L; target: string; at: string; }
 export const activity: DActivity[] = [
   { id: "a1", who: "Sen", action: { tr: "yeni bir oda yükledi:", en: "uploaded a new room:" }, target: "Cihangir · Oturma odası", at: "2026-06-13T09:10:00Z" },
-  { id: "a2", who: "Oda", action: { tr: "6 İskandinav görünüm üretti:", en: "generated 6 Scandinavian looks for" }, target: "Cihangir", at: "2026-06-13T09:11:00Z" },
+  { id: "a2", who: "Callypso Decor", action: { tr: "6 İskandinav görünüm üretti:", en: "generated 6 Scandinavian looks for" }, target: "Cihangir", at: "2026-06-13T09:11:00Z" },
   { id: "a3", who: "Sen", action: { tr: "bir görünümü favoriledi:", en: "saved a look for" }, target: "Moda · Yatak odası", at: "2026-06-13T08:26:00Z" },
   { id: "a4", who: "Müşteri", action: { tr: "öncesi/sonrası galerisini onayladı:", en: "approved the before/after gallery for" }, target: "Çeşme · Yazlık", at: "2026-06-12T16:08:00Z" },
-  { id: "a5", who: "Oda", action: { tr: "tadilat varyantı önerdi:", en: "suggested a renovation variant for" }, target: "Nişantaşı · Mutfak", at: "2026-06-12T15:20:00Z" },
+  { id: "a5", who: "Callypso Decor", action: { tr: "tadilat varyantı önerdi:", en: "suggested a renovation variant for" }, target: "Nişantaşı · Mutfak", at: "2026-06-12T15:20:00Z" },
 ];
 
 /* ── Trend (looks generated, last 14 days) ────────────────────────────────── */

@@ -70,7 +70,7 @@ export function RoomScene({
           <line key={i} x1={-20 + i * 80} y1="214" x2={20 + i * 80} y2="300" stroke={`oklch(${p.floor})`} strokeWidth="1.5" opacity="0.45" />
         ))}
 
-      {/* arched window — the signature of every Oda room */}
+      {/* arched window — the signature of every Callypso Decor room */}
       <path d="M250 174 V96 a44 44 0 0 1 88 0 V174 Z" fill={`url(#win-${id})`} />
       <path d="M250 174 V96 a44 44 0 0 1 88 0 V174" fill="none" stroke="#fff" strokeWidth="6" />
       <line x1="294" y1="52" x2="294" y2="174" stroke="#fff" strokeWidth="3.5" />

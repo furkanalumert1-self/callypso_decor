@@ -50,7 +50,7 @@ export default function OdaDashboard() {
 
   const m = {
     tr: {
-      eyebrow: "Genel · Bugün", body: "Evinin yeni hâli hazırlanıyor. Yeni bir oda fotoğrafı yükle; Oda onu seçtiğin stilde yeniden döşesin.",
+      eyebrow: "Genel · Bugün", body: "Evinin yeni hâli hazırlanıyor. Yeni bir oda fotoğrafı yükle; Callypso Decor onu seçtiğin stilde yeniden döşesin.",
       newRoom: "Yeni oda", queue: "tasarım kuyrukta", featured: "Öne çıkan dönüşüm", reveal: "Öncesi / sonrası",
       before: "Önce", after: "Sonra",
       roomsM: "oda bu ay", looksM: "görünüm", saved: "kaydedildi",
@@ -65,7 +65,7 @@ export default function OdaDashboard() {
       moods: "Kaydedilen panolar", moodsAll: "Tümü", moodSaved: "kayıt",
     },
     en: {
-      eyebrow: "Overview · Today", body: "Your home's new look is on its way. Upload a new room photo and let Oda restyle it in the style you pick.",
+      eyebrow: "Overview · Today", body: "Your home's new look is on its way. Upload a new room photo and let Callypso Decor restyle it in the style you pick.",
       newRoom: "New room", queue: "designs in the queue", featured: "Featured transformation", reveal: "Before / after",
       before: "Before", after: "After",
       roomsM: "rooms this month", looksM: "looks", saved: "saved",

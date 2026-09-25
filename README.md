@@ -1,25 +1,45 @@
-# PetCheck
+# Callypso Decor
 
-**The calm command center for a busy vet clinic.** PetCheck unifies patient
-records, the appointment book and billing into one workspace — with automatic
-SMS reminders that cut no-shows and a chart for every pet one click away.
+**Bir oda fotoğrafını yeni bir hayata dönüştür.** Callypso Decor, bir odanın
+fotoğrafını farklı stillerde (İskandinav, Bohem, Japandi…) yeniden döşeyen ve
+öncesi/sonrası karşılaştırması gösteren bir iç mekân tasarım uygulamasıdır.
+Bir **CallypsoTech** ürünüdür. Arayüz Türkçe ve İngilizce (TR/EN) destekler.
 
-## Quick start
+*Turn a room photo into a whole new look — Callypso Decor restyles a room photo
+in different styles and shows a before/after comparison. A CallypsoTech product.*
+
+## Durum: demo
+
+Bu sürüm bir **demo**dur:
+
+- Oda görselleri AI ile üretilmez; hepsi satır içi **SVG** çizimlerdir.
+- Projeler, istatistikler ve kullanıcı yorumları **örnek verilerdir**
+  (`lib/demo/data.ts`, `app/(marketing)/page.tsx`).
+- Gerçek **AI üretimi, kimlik doğrulama (auth) ve backend bağlı değildir**;
+  giriş/kayıt ekranları demo modunda herhangi bir e-posta/şifreyi kabul eder.
+
+Pazarlama sayfasındaki rakamlar ve vaatler örnek metindir, doğrulanmış sonuç
+değildir.
+
+## Komutlar
 
 ```bash
 npm install
-npm run dev          # → http://localhost:3000  (demo mode, no keys needed)
+npm run dev      # → http://localhost:3000 (demo modu, anahtar gerekmez)
+npm run build    # üretim derlemesi
+npm run start    # derlenmiş uygulamayı çalıştırır
+npm run lint     # ESLint
 ```
 
-## Make it yours
+## Sayfalar
 
-Open this folder in **Claude Code** and say **"set up this project"** (or run
-**`/setup`**). It asks for your brand, logo, colors, and your **Twilio** +
-**Stripe** keys, then wires them in. By hand? See [`SETUP.md`](./SETUP.md).
+`/` (tanıtım) · `/login`, `/signup` · `/dashboard` · `/projects` · `/styles` ·
+`/gallery` · `/settings`
 
-## Pages
+## Yapılandırma
 
-`Schedule` (today's book & KPIs) · `Patients` (pet records) · `Records` (visit
-notes timeline) · `Invoices` (billing) · `Settings`.
+Marka, metinler ve menü `app.config.ts` içindedir. `domain` ve `email` alanları
+şimdilik boştur; doldurulana kadar arayüzde gösterilmez. Kurulum adımları için
+[`SETUP.md`](./SETUP.md) ve [`START-HERE.md`](./START-HERE.md) dosyalarına bakın.
 
-Built on the GoatStarter template — Next.js 16 · React 19 · Tailwind v4.
+GoatStarter şablonu üzerine kuruludur — Next.js 16 · React 19 · Tailwind v4.

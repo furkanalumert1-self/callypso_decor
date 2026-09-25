@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import appConfig from "@/app.config";
 
-/** Oda logomark — an armchair inside a framed room arch, in warm terracotta. */
+/** Callypso Decor logomark — an armchair inside a framed room arch, in warm terracotta. */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 40 40" className={className} role="img" aria-label={appConfig.name}>
@@ -41,12 +41,12 @@ export function Logo({
   onDark?: boolean;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span className={cn("inline-flex min-w-0 items-center gap-2.5", className)}>
       <LogoMark className="h-8 w-8 shrink-0 drop-shadow-sm" />
       {withWordmark && (
         <span
           className={cn(
-            "font-display text-lg font-semibold tracking-tight",
+            "truncate font-display text-lg font-semibold tracking-tight",
             onDark ? "text-sidebar-foreground" : "text-foreground",
           )}
         >

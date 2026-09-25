@@ -8,6 +8,7 @@ import {
   Home, Building2, Compass, KeyRound, Upload, Layers, ListChecks,
   Lamp, Armchair, Flower2, Frame,
 } from "lucide-react";
+import appConfig from "@/app.config";
 import { LogoMark } from "@/components/ui/logo";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { RoomScene, type RoomStyle } from "@/components/room-scene";
@@ -17,19 +18,21 @@ import { cn } from "@/lib/utils";
 
 const moduleIcons = [WandSparkles, Palette, ArrowLeftRight, Ruler, ShoppingBag, Users];
 
+const brand = appConfig.name;
+
 const content = {
   tr: {
     nav: ["Ne yapar", "Stiller", "Fiyatlar"], signin: "Giriş yap", demo: "Demoyu dene",
     badge: "Yapay zekâ iç mimar",
     h1a: "Odanın fotoğrafını çek.", h1b: "Yeni halini", h1c: "saniyede gör.",
-    sub: "Oda, telefonunla çektiğin bir oda fotoğrafını sessizce alır; İskandinav, Bohem ya da Japandi gibi stillerde yeniden döşer, tadilat sonrası halini öncesi/sonrası olarak gösterir. Mimar randevusu, mood board, tahmin yok — sadece yaşamak isteyeceğin bir oda.",
+    sub: `${brand}, telefonunla çektiğin bir oda fotoğrafını sessizce alır; İskandinav, Bohem ya da Japandi gibi stillerde yeniden döşer, tadilat sonrası halini öncesi/sonrası olarak gösterir. Mimar randevusu, mood board, tahmin yok — sadece yaşamak isteyeceğin bir oda.`,
     cta1: "Odanı dönüştür", cta2: "Nasıl göründüğüne bak", note: "· kart yok · 60 saniyelik demo",
-    proofAvatars: "5.000+ kişi evini Oda ile yeniden tasarlıyor.",
-    marqueeTitle: "Oda her mekânı tanır",
+    proofAvatars: `5.000+ kişi evini ${brand} ile yeniden tasarlıyor.`,
+    marqueeTitle: `${brand} her mekânı tanır`,
     marquee: ["Oturma odası", "Yatak odası", "Mutfak", "Banyo", "Çalışma odası", "Çocuk odası", "Hol", "Balkon", "Yemek odası", "Stüdyo daire", "Teras", "Giriş"],
     problemKicker: "İkilem",
     problemH: ["Boş bir oda hayal kurdurmaz.", "İç mimar pahalı, tahmin riskli."],
-    problemBody: "Boş ya da eski bir odaya bakıp 'acaba nasıl olurdu' diye düşünürsün. Pinterest'te kaybolursun, mobilyayı kafanda kuramazsın, mimar pahalı, satın alınca beğenmeme riski yüksek. Oda bütün bu belirsizliği saniyeler içinde gözünün önüne koyar.",
+    problemBody: `Boş ya da eski bir odaya bakıp 'acaba nasıl olurdu' diye düşünürsün. Pinterest'te kaybolursun, mobilyayı kafanda kuramazsın, mimar pahalı, satın alınca beğenmeme riski yüksek. ${brand} bütün bu belirsizliği saniyeler içinde gözünün önüne koyar.`,
     problemStats: [
       { n: "₺18.000", l: "tek oda için iç mimar danışmanlığı" },
       { n: "3 hafta", l: "mood board + revizyon bekleme süresi" },
@@ -46,7 +49,7 @@ const content = {
       { t: "Öncesi/sonrası al", b: "Saniyeler içinde gerçek odanın yanında, gözünün önünde duran inandırıcı bir yeni hâl.", icon: ArrowLeftRight },
     ],
     stylesKicker: "Stiller",
-    stylesH: ["Bir his seç.", "Gerisini Oda halleder."],
+    stylesH: ["Bir his seç.", `Gerisini ${brand} halleder.`],
     stylesBody: "Her stil kendi paleti, dokusu ve mobilya diliyle gelir. Tek dokunuşla aynı odayı farklı dünyalarda gör.",
     stylesTry: "Bu stilde dene",
     proof: [
@@ -59,18 +62,18 @@ const content = {
     testimonials: [
       { q: "Salonumuzun fotoğrafını çektim, beş dakika sonra eşimle hangi stili alacağımıza karar vermiştik. Tartışma bitti.", who: "Elif & Murat", role: "Cihangir · ev sahibi", metric: "5 dk'da karar" },
       { q: "İç mimarım. Müşteriye artık 'hayal edin' demiyorum, öncesi/sonrası galeriyi gönderiyorum. Onay süresi yarı yarıya düştü.", who: "Selin A.", role: "İç mimar · stüdyo", metric: "%50 hızlı onay" },
-      { q: "Tadilattan önce mutfak tezgâhının iki rengini de gördüm. Yanlış mermeri almaktan Oda kurtardı.", who: "Kerem T.", role: "Nişantaşı · yenileme", metric: "₺40.000 tasarruf" },
-      { q: "Boş daireleri Oda ile döşeyip ilana koyuyorum. Aynı portföyle randevu sayım belirgin arttı.", who: "Deniz Y.", role: "Emlak danışmanı", metric: "+38% randevu" },
-      { q: "Kiracıyım, duvara dokunamıyorum. Oda toplanabilir mobilya fikirleriyle evimi bana ait yaptı.", who: "Naz B.", role: "Kadıköy · kiracı", metric: "0 tadilat" },
+      { q: `Tadilattan önce mutfak tezgâhının iki rengini de gördüm. Yanlış mermeri almaktan ${brand} kurtardı.`, who: "Kerem T.", role: "Nişantaşı · yenileme", metric: "₺40.000 tasarruf" },
+      { q: `Boş daireleri ${brand} ile döşeyip ilana koyuyorum. Aynı portföyle randevu sayım belirgin arttı.`, who: "Deniz Y.", role: "Emlak danışmanı", metric: "+38% randevu" },
+      { q: `Kiracıyım, duvara dokunamıyorum. ${brand} toplanabilir mobilya fikirleriyle evimi bana ait yaptı.`, who: "Naz B.", role: "Kadıköy · kiracı", metric: "0 tadilat" },
       { q: "Müşterilerime 3 stili tek linkte gönderiyorum, onlar telefonda seçiyor. Toplantı sayım yarıya indi.", who: "Mert & Ece", role: "Tasarım stüdyosu", metric: "2× verim" },
     ],
-    compareKicker: "Neden Oda",
-    compareH: ["Eski yol.", "Oda yolu."],
+    compareKicker: `Neden ${brand}`,
+    compareH: ["Eski yol.", `${brand} yolu.`],
     compareOld: ["Aylarca süren mood board turları", "Binlerce liralık danışmanlık", "Kafanda kuramadığın mobilya", "Satın alınca beğenmeme riski", "Tek bir stil önerisi"],
     compareNew: ["Saniyeler içinde öncesi/sonrası", "Ayda bir kahve fiyatına", "Gözünün önünde gerçek oda", "Almadan önce gör, sonra karar ver", "12+ stil, sınırsız varyant"],
     promiseKicker: "Dürüst söz",
     promiseH: ["Odayı yeniden tasarlarız.", "Gerçeği saklamayız."],
-    promiseBody: "Oda mobilyayı, rengi ve ışığı değiştirir — ama duvarı kaldırmaz, pencereyi taşımaz, m²'yi büyütmez. Sonuç inandırıcı bir öneridir; bir tadilat planına dönüştürebileceğin gerçekçi bir başlangıç.",
+    promiseBody: `${brand} mobilyayı, rengi ve ışığı değiştirir — ama duvarı kaldırmaz, pencereyi taşımaz, m²'yi büyütmez. Sonuç inandırıcı bir öneridir; bir tadilat planına dönüştürebileceğin gerçekçi bir başlangıç.`,
     promiseBullets: [
       "Yapısal değişiklik yok: pencere, oda planı ve perspektif korunur.",
       "Orijinal fotoğraf her zaman saklanır; öncesi/sonrası bir arada.",
@@ -87,8 +90,8 @@ const content = {
     faqKicker: "Merak edilenler",
     faqH: "Kısa cevaplar.",
     faq: [
-      { q: "Denemek için API anahtarı gerekir mi?", a: "Hayır. Oda örnek projeler ve üretilmiş öncesi/sonrası görsellerle demo modda açılır — hemen tıklayabilirsin. Canlı üretim için fal.ai / Anthropic anahtarını /setup ile bağlarsın." },
-      { q: "Sonuçlar gerçekçi mi?", a: "Evet. Oda odanın yapısını (pencere, plan, perspektif) korur ve sadece yüzeyleri, mobilyayı ve ışığı yeniden tasarlar. Fotomontaj değil, inandırıcı bir öneri." },
+      { q: "Denemek için API anahtarı gerekir mi?", a: `Hayır. ${brand} örnek projeler ve üretilmiş öncesi/sonrası görsellerle demo modda açılır — hemen tıklayabilirsin. Canlı üretim için fal.ai / Anthropic anahtarını /setup ile bağlarsın.` },
+      { q: "Sonuçlar gerçekçi mi?", a: `Evet. ${brand} odanın yapısını (pencere, plan, perspektif) korur ve sadece yüzeyleri, mobilyayı ve ışığı yeniden tasarlar. Fotomontaj değil, inandırıcı bir öneri.` },
       { q: "Hangi odalar için çalışır?", a: "Oturma odası, yatak odası, mutfak, banyo, çalışma odası, çocuk odası ve dış mekânlar — boş ya da dolu fark etmez." },
       { q: "İç mimarlar kullanabilir mi?", a: "Evet. Stüdyo planı müşteri galerileri, marka ve ekip koltukları getirir; öncesi/sonrası sunumlarını tek linkle paylaşırsın." },
       { q: "Bir oda kaç saniyede dönüşüyor?", a: "Ortalama 8 saniye. Yüklersin, stili seçersin, öncesi/sonrası çift saniyeler içinde gözünün önünde olur." },
@@ -127,7 +130,7 @@ const content = {
     /* ── Personas / use-cases ── */
     personasKicker: "Kimler için",
     personasH: ["Bir oda fotoğrafı,", "dört farklı hayat."],
-    personasBody: "Oda; ev sahibinden emlakçıya, iç mimardan kiracıya kadar herkesin aynı sıkıntısını çözer: 'burası nasıl olurdu?'",
+    personasBody: `${brand}; ev sahibinden emlakçıya, iç mimardan kiracıya kadar herkesin aynı sıkıntısını çözer: 'burası nasıl olurdu?'`,
     personas: [
       { icon: Home, t: "Ev sahibi", b: "Taşınmadan ya da tadilattan önce evinin yeni halini gör; eşinle aynı sayfada buluş, yanlış mobilyaya para harcama." },
       { icon: Building2, t: "Emlakçı", b: "Boş ya da eski bir daireyi döşenmiş haliyle göster; ilan fotoğraflarına 'sanal home-staging' ekle, daha hızlı sat." },
@@ -138,10 +141,10 @@ const content = {
     /* ── Workflow deep-dive ── */
     flowKicker: "Akış",
     flowH: ["Fotoğraftan alışveriş", "listesine kadar."],
-    flowBody: "Oda tek bir görseli bitmiş bir tasarım sürecine çevirir: oda seç, stil uygula, varyantları gez, beğendiğini alışveriş listesine dök.",
+    flowBody: `${brand} tek bir görseli bitmiş bir tasarım sürecine çevirir: oda seç, stil uygula, varyantları gez, beğendiğini alışveriş listesine dök.`,
     flowSteps: [
       { icon: Upload, t: "Oda seç & yükle", b: "Telefonunla çektiğin fotoğrafı sürükle; boş, dolu ya da dağınık fark etmez." },
-      { icon: Palette, t: "Stil uygula", b: "12+ stilden birini seç; Oda yapıyı koruyup yüzeyleri, mobilyayı ve ışığı yeniden döşer." },
+      { icon: Palette, t: "Stil uygula", b: `12+ stilden birini seç; ${brand} yapıyı koruyup yüzeyleri, mobilyayı ve ışığı yeniden döşer.` },
       { icon: Layers, t: "Varyantları gez", b: "Aynı odanın farklı palet ve zemin varyantlarını yan yana karşılaştır." },
       { icon: ListChecks, t: "Alışveriş listesi", b: "Beğendiğin görseldeki parçalar bütçene göre benzer ürünlerle listeye düşer." },
     ],
@@ -171,8 +174,8 @@ const content = {
 
     /* ── Comparison table ── */
     tableKicker: "Karşılaştır",
-    tableH: ["İç mimar, Pinterest", "ve Oda."],
-    tableCols: ["", "İç mimar", "Pinterest", "Oda"],
+    tableH: ["İç mimar, Pinterest", `ve ${brand}.`],
+    tableCols: ["", "İç mimar", "Pinterest", brand],
     tableRows: [
       { f: "Kendi odanı görürsün", a: false, b: false, c: true },
       { f: "Öncesi / sonrası", a: true, b: false, c: true },
@@ -189,14 +192,14 @@ const content = {
     nav: ["What it does", "Styles", "Pricing"], signin: "Sign in", demo: "Try the demo",
     badge: "AI interior designer",
     h1a: "Snap a photo of your room.", h1b: "See its new life", h1c: "in seconds.",
-    sub: "Oda quietly takes the photo you shot on your phone — restyles the space in Scandinavian, Bohemian or Japandi, and shows the renovated look as a before/after. No designer appointment, no mood board, no guessing — just a room you'd want to live in.",
+    sub: `${brand} quietly takes the photo you shot on your phone — restyles the space in Scandinavian, Bohemian or Japandi, and shows the renovated look as a before/after. No designer appointment, no mood board, no guessing — just a room you'd want to live in.`,
     cta1: "Restyle your room", cta2: "See what it looks like", note: "· no card · 60-second demo",
-    proofAvatars: "5,000+ people are redesigning their home with Oda.",
-    marqueeTitle: "Oda knows every kind of space",
+    proofAvatars: `5,000+ people are redesigning their home with ${brand}.`,
+    marqueeTitle: `${brand} knows every kind of space`,
     marquee: ["Living room", "Bedroom", "Kitchen", "Bathroom", "Home office", "Kids' room", "Hallway", "Balcony", "Dining room", "Studio flat", "Terrace", "Entryway"],
     problemKicker: "The dilemma",
     problemH: ["An empty room won't dream for you.", "Designers cost a lot, guessing is risky."],
-    problemBody: "You look at an empty or tired room and wonder 'what would it even look like'. You get lost on Pinterest, can't picture the furniture, a designer is expensive, and buying blind risks regret. Oda puts the whole uncertainty in front of your eyes in seconds.",
+    problemBody: `You look at an empty or tired room and wonder 'what would it even look like'. You get lost on Pinterest, can't picture the furniture, a designer is expensive, and buying blind risks regret. ${brand} puts the whole uncertainty in front of your eyes in seconds.`,
     problemStats: [
       { n: "$1,200", l: "interior design consult, per room" },
       { n: "3 weeks", l: "mood board + revision turnaround" },
@@ -213,7 +216,7 @@ const content = {
       { t: "Get before/after", b: "In seconds, a believable new look sitting right beside your real room, in front of your eyes.", icon: ArrowLeftRight },
     ],
     stylesKicker: "Styles",
-    stylesH: ["Pick a feeling.", "Oda handles the rest."],
+    stylesH: ["Pick a feeling.", `${brand} handles the rest.`],
     stylesBody: "Each style comes with its own palette, texture and furniture language. See the same room in different worlds with one tap.",
     stylesTry: "Try this style",
     proof: [
@@ -226,18 +229,18 @@ const content = {
     testimonials: [
       { q: "I snapped a photo of our living room and five minutes later my husband and I had agreed on the style. The argument was over.", who: "Elif & Murat", role: "Cihangir · homeowner", metric: "decided in 5 min" },
       { q: "I'm an interior designer. I no longer tell clients to 'imagine it' — I send the before/after gallery. Approval time halved.", who: "Selin A.", role: "Interior designer · studio", metric: "50% faster approvals" },
-      { q: "Before renovating I saw both counter colors for the kitchen. Oda saved me from buying the wrong marble.", who: "Kerem T.", role: "Nişantaşı · renovation", metric: "$1,400 saved" },
-      { q: "I stage empty flats with Oda and put them straight into listings. Viewings on the same portfolio went way up.", who: "Deniz Y.", role: "Real-estate advisor", metric: "+38% viewings" },
-      { q: "I'm a renter, I can't touch the walls. Oda made the place mine with movable furniture ideas.", who: "Naz B.", role: "Kadıköy · renter", metric: "0 renovation" },
+      { q: `Before renovating I saw both counter colors for the kitchen. ${brand} saved me from buying the wrong marble.`, who: "Kerem T.", role: "Nişantaşı · renovation", metric: "$1,400 saved" },
+      { q: `I stage empty flats with ${brand} and put them straight into listings. Viewings on the same portfolio went way up.`, who: "Deniz Y.", role: "Real-estate advisor", metric: "+38% viewings" },
+      { q: `I'm a renter, I can't touch the walls. ${brand} made the place mine with movable furniture ideas.`, who: "Naz B.", role: "Kadıköy · renter", metric: "0 renovation" },
       { q: "I send clients 3 styles in one link and they pick on the phone. My number of meetings halved.", who: "Mert & Ece", role: "Design studio", metric: "2× throughput" },
     ],
-    compareKicker: "Why Oda",
-    compareH: ["The old way.", "The Oda way."],
+    compareKicker: `Why ${brand}`,
+    compareH: ["The old way.", `The ${brand} way.`],
     compareOld: ["Months of mood board rounds", "Thousands in consulting fees", "Furniture you can't picture", "Risk of regret after buying", "A single style suggestion"],
     compareNew: ["A before/after in seconds", "For the price of a coffee a month", "The real room before your eyes", "See it before you buy, then decide", "12+ styles, unlimited variants"],
     promiseKicker: "The honest promise",
     promiseH: ["We restyle the room.", "We never hide the truth."],
-    promiseBody: "Oda changes the furniture, color and light — but it won't remove walls, move windows, or grow the square meters. The result is a believable proposal; a realistic starting point you can turn into a renovation plan.",
+    promiseBody: `${brand} changes the furniture, color and light — but it won't remove walls, move windows, or grow the square meters. The result is a believable proposal; a realistic starting point you can turn into a renovation plan.`,
     promiseBullets: [
       "No structural changes: windows, layout and perspective are preserved.",
       "The original photo is always kept; before/after side by side.",
@@ -254,8 +257,8 @@ const content = {
     faqKicker: "Good to know",
     faqH: "The short answers.",
     faq: [
-      { q: "Do I need API keys to try it?", a: "No. Oda boots in demo mode with sample projects and generated before/after visuals — click around immediately. Wire your fal.ai / Anthropic key via /setup for live generation." },
-      { q: "Are the results realistic?", a: "Yes. Oda preserves the room's structure (windows, layout, perspective) and restyles only the surfaces, furniture and light. A believable proposal, not a fake render." },
+      { q: "Do I need API keys to try it?", a: `No. ${brand} boots in demo mode with sample projects and generated before/after visuals — click around immediately. Wire your fal.ai / Anthropic key via /setup for live generation.` },
+      { q: "Are the results realistic?", a: `Yes. ${brand} preserves the room's structure (windows, layout, perspective) and restyles only the surfaces, furniture and light. A believable proposal, not a fake render.` },
       { q: "Which rooms does it work on?", a: "Living room, bedroom, kitchen, bathroom, home office, kids' room and outdoor spaces — empty or furnished, either way." },
       { q: "Can interior designers use it?", a: "Yes. The Studio plan adds client galleries, brand and team seats; you share before/after presentations with a single link." },
       { q: "How fast is a restyle?", a: "About 8 seconds on average. You upload, pick a style, and the before/after pair is in front of your eyes in seconds." },
@@ -294,7 +297,7 @@ const content = {
     /* ── Personas / use-cases ── */
     personasKicker: "Who it's for",
     personasH: ["One room photo,", "four different lives."],
-    personasBody: "Oda solves the same itch for everyone — from homeowner to realtor, designer to renter: 'what would this even look like?'",
+    personasBody: `${brand} solves the same itch for everyone — from homeowner to realtor, designer to renter: 'what would this even look like?'`,
     personas: [
       { icon: Home, t: "Homeowner", b: "See your home's new look before you move or renovate; get on the same page with your partner, never waste money on the wrong furniture." },
       { icon: Building2, t: "Realtor", b: "Show an empty or tired flat fully furnished; add virtual home-staging to your listing photos and sell faster." },
@@ -305,10 +308,10 @@ const content = {
     /* ── Workflow deep-dive ── */
     flowKicker: "The flow",
     flowH: ["From photo to", "shopping list."],
-    flowBody: "Oda turns a single photo into a finished design process: pick a room, apply a style, browse variants, drop what you love into a shopping list.",
+    flowBody: `${brand} turns a single photo into a finished design process: pick a room, apply a style, browse variants, drop what you love into a shopping list.`,
     flowSteps: [
       { icon: Upload, t: "Pick & upload a room", b: "Drag in the photo you shot on your phone; empty, lived-in or messy — it's fine." },
-      { icon: Palette, t: "Apply a style", b: "Choose from 12+ styles; Oda keeps the structure and re-dresses surfaces, furniture and light." },
+      { icon: Palette, t: "Apply a style", b: `Choose from 12+ styles; ${brand} keeps the structure and re-dresses surfaces, furniture and light.` },
       { icon: Layers, t: "Browse variants", b: "Compare different palette and flooring variants of the same room, side by side." },
       { icon: ListChecks, t: "Shopping list", b: "The pieces in the look you love drop into a list, matched to your budget with similar products." },
     ],
@@ -338,8 +341,8 @@ const content = {
 
     /* ── Comparison table ── */
     tableKicker: "Compare",
-    tableH: ["Interior designer, Pinterest", "and Oda."],
-    tableCols: ["", "Designer", "Pinterest", "Oda"],
+    tableH: ["Interior designer, Pinterest", `and ${brand}.`],
+    tableCols: ["", "Designer", "Pinterest", brand],
     tableRows: [
       { f: "See your own room", a: false, b: false, c: true },
       { f: "Before / after", a: true, b: false, c: true },
@@ -430,16 +433,16 @@ export default function OdaLanding() {
       {/* ── Nav ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center px-5 lg:px-8">
-          <Link href="/" className="inline-flex items-center gap-2.5"><LogoMark className="h-8 w-8" /><span className="font-display text-lg font-semibold tracking-tight">Oda</span></Link>
+          <Link href="/" aria-label={brand} className="inline-flex shrink-0 items-center gap-2.5"><LogoMark className="h-8 w-8 shrink-0" /><span className="max-w-[5.5rem] font-display text-[15px] font-semibold leading-[1.05] tracking-tight max-[359px]:hidden sm:max-w-none sm:text-lg sm:leading-normal">{brand}</span></Link>
           <nav className="ml-auto hidden items-center gap-7 text-sm text-muted-foreground md:flex">
             <a href="#what" className="hover:text-foreground transition-colors">{c.nav[0]}</a>
             <a href="#styles" className="hover:text-foreground transition-colors">{c.nav[1]}</a>
             <a href="#pricing" className="hover:text-foreground transition-colors">{c.nav[2]}</a>
           </nav>
-          <div className="ml-auto flex items-center gap-2 md:ml-7">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2 md:ml-7">
             <LanguageToggle className="mr-1" />
             <Link href="/login" className="hidden px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">{c.signin}</Link>
-            <Link href="/signup" className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-[13px] font-medium text-background transition hover:opacity-90">{c.demo} <ArrowUpRight className="h-3.5 w-3.5" /></Link>
+            <Link href="/signup" className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-foreground px-3.5 py-2 text-[13px] font-medium text-background transition hover:opacity-90 sm:px-4">{c.demo} <ArrowUpRight className="hidden h-3.5 w-3.5 sm:block" /></Link>
           </div>
         </div>
       </header>
@@ -873,7 +876,7 @@ export default function OdaLanding() {
         </div>
       </section>
 
-      {/* ── Comparison table (designer / Pinterest / Oda) ───────────── */}
+      {/* ── Comparison table (designer / Pinterest / Callypso Decor) ───────────── */}
       <section className="px-5 py-16 lg:px-8 lg:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
@@ -991,7 +994,7 @@ export default function OdaLanding() {
         <div className="mx-auto max-w-6xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_3fr]">
             <div>
-              <Link href="/" className="inline-flex items-center gap-2.5"><LogoMark className="h-8 w-8" /><span className="font-display text-lg font-semibold tracking-tight text-foreground">Oda</span></Link>
+              <Link href="/" className="inline-flex min-w-0 items-center gap-2.5"><LogoMark className="h-8 w-8 shrink-0" /><span className="truncate font-display text-lg font-semibold tracking-tight text-foreground">{brand}</span></Link>
               <p className="display-accent mt-4 max-w-[30ch] text-[14px] leading-relaxed text-muted-foreground">{c.footTagline}</p>
               <div className="mt-6 flex items-center gap-3">
                 <div className="flex gap-1.5">
@@ -999,7 +1002,7 @@ export default function OdaLanding() {
                     <span key={h} className="h-3.5 w-3.5 rounded-full ring-1 ring-black/5" style={{ background: h }} />
                   ))}
                 </div>
-                <p className="label-mono text-muted-foreground">oda.design</p>
+                <p className="label-mono text-muted-foreground">{appConfig.domain || appConfig.company}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
@@ -1016,7 +1019,7 @@ export default function OdaLanding() {
             </div>
           </div>
           <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-border pt-6 text-[12px] text-muted-foreground md:flex-row md:items-center">
-            <p>© 2026 Oda · hello@oda.design · {c.footRights}</p>
+            <p>© 2026 {appConfig.company} · {brand}{appConfig.email ? ` · ${appConfig.email}` : ""} · {c.footRights}</p>
             <p className="label-mono inline-flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-success pulse-dot" /> {lang === "tr" ? "TR & EN · demo modu" : "TR & EN · demo mode"}
             </p>
@@ -1031,7 +1034,7 @@ export default function OdaLanding() {
 function appFeatures(lang: "tr" | "en") {
   return {
     tr: [
-      { t: "Anında yeniden döşeme", b: "Boş ya da dolu bir odanın fotoğrafını yükle; Oda onu seçtiğin stilde, gerçekçi mobilya ve ışıkla yeniden döşer." },
+      { t: "Anında yeniden döşeme", b: `Boş ya da dolu bir odanın fotoğrafını yükle; ${brand} onu seçtiğin stilde, gerçekçi mobilya ve ışıkla yeniden döşer.` },
       { t: "12+ tasarım stili", b: "İskandinav, Bohem, Japandi, Modern, Akdeniz, Endüstriyel… Her stil kendi paleti, dokusu ve mobilya diliyle gelir." },
       { t: "Öncesi / sonrası", b: "Her sonuç gerçek odanın yanında öncesi-sonrası olarak gelir — hayal etme, gör. Tek dokunuşla karşılaştır." },
       { t: "Tadilat keşfi", b: "Sadece mobilya değil: zemin, duvar rengi, tezgâh varyantlarını dene; tadilat sonrası halini öngör." },
@@ -1039,7 +1042,7 @@ function appFeatures(lang: "tr" | "en") {
       { t: "Müşteriyle paylaş", b: "İç mimarlar için: her projeyi müşteriye gönderilebilir bir öncesi/sonrası galerisi olarak paylaş, onay topla." },
     ],
     en: [
-      { t: "Instant restyle", b: "Upload a photo of an empty or lived-in room; Oda redresses it in your chosen style with believable furniture and light." },
+      { t: "Instant restyle", b: `Upload a photo of an empty or lived-in room; ${brand} redresses it in your chosen style with believable furniture and light.` },
       { t: "12+ design styles", b: "Scandinavian, Bohemian, Japandi, Modern, Mediterranean, Industrial… each with its own palette, texture and furniture language." },
       { t: "Before / after", b: "Every result comes as a before/after against your real room — don't imagine it, see it. Compare with one tap." },
       { t: "Renovation explorer", b: "Beyond furniture: try flooring, wall color and counter variants; preview the post-renovation look." },
