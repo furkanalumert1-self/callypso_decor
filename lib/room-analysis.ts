@@ -8,12 +8,12 @@ export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" 
  * need the workspace named on every request — set ANTHROPIC_WORKSPACE_ID
  * (Console → Workspaces → the workspace's ID), or use a workspace-scoped key.
  */
-function claudeClient() {
+export function claudeClient() {
   const workspace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
   return new Anthropic(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {});
 }
 
-function issueFrom(error: unknown): ClaudeIssue {
+export function issueFrom(error: unknown): ClaudeIssue {
   if (error instanceof Anthropic.APIError) {
     const detail = error.message.slice(0, 200);
     if (error.status === 401) return { code: "auth", detail };
