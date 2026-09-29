@@ -58,3 +58,24 @@ export function initials(name: string) {
 export function formatTry(amount: number, lang: "tr" | "en" = "tr") {
   return new Intl.NumberFormat(lang === "tr" ? "tr-TR" : "en-US", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(amount);
 }
+
+/**
+ * Parse a price typed the Turkish or English way: "46.000" → 46000,
+ * "18.900,50" → 18900.5, "1,299.99" → 1299.99, "₺ 7 450" → 7450.
+ */
+export function parsePrice(input: string): number {
+  let s = input.replace(/[^\d.,]/g, "");
+  if (!s) return 0;
+  const lastComma = s.lastIndexOf(","), lastDot = s.lastIndexOf(".");
+  if (lastComma > -1 && lastDot > -1) {
+    // the later separator is the decimal one
+    s = lastComma > lastDot ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  } else if (lastComma > -1) {
+    s = /,\d{3}$/.test(s) && s.split(",").length > 1 && !/,\d{1,2}$/.test(s) ? s.replace(/,/g, "") : s.replace(",", ".");
+  } else if (lastDot > -1) {
+    // "46.000" / "1.250.000" are thousands; "12.5" / "12.50" are decimals
+    if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  }
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0;
+}

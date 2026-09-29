@@ -10,7 +10,7 @@ import { categoryLabel, type ProductCategory } from "@/lib/demo/products";
 import { createProduct, updateProduct, type Product } from "@/lib/data";
 import { fileToDataUrl } from "@/lib/image";
 import { guessCategory } from "@/lib/categories";
-import { cn } from "@/lib/utils";
+import { cn, formatTry, parsePrice } from "@/lib/utils";
 
 const CATEGORIES = Object.keys(categoryLabel) as ProductCategory[];
 
@@ -63,7 +63,7 @@ export function ProductFormDialog({
     if (!name.trim()) return toast(m.needName, "error");
     setSaving(true);
     const data = {
-      name: name.trim(), sku: sku.trim(), category, price: Math.max(0, Number(price) || 0), image,
+      name: name.trim(), sku: sku.trim(), category, price: parsePrice(price), image,
       width: cm(width), depth: cm(depth), height: cm(height),
     };
     try {
@@ -127,7 +127,8 @@ export function ProductFormDialog({
           </label>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{m.price}</span>
-            <input type="number" min={0} step="1" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} className={field} />
+            <input type="text" inputMode="decimal" placeholder="18.900" value={price} onChange={(e) => setPrice(e.target.value)} className={field} />
+            {price.trim() && <span className="block text-[11px] text-muted-foreground">= {parsePrice(price) > 0 ? formatTry(parsePrice(price), lang) : "—"}</span>}
           </label>
         </div>
         <div className="space-y-1.5">
