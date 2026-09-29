@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { CompareSlider } from "@/components/app/compare-slider";
+import { ClaudeIssueNote, type ClaudeIssue } from "@/components/app/claude-issue-note";
 import { useLang } from "@/components/i18n/language-provider";
 import { roomLiving } from "@/lib/demo/data";
 import { categoryLabel } from "@/lib/demo/products";
@@ -41,7 +42,7 @@ export function PlaceDialog({
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [variant, setVariant] = useState(0);
-  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check } | null>(null);
+  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check; issue: ClaudeIssue | null } | null>(null);
 
   const m = {
     tr: {
@@ -142,16 +143,16 @@ export function PlaceDialog({
           })),
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string; check?: Check };
+      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string; check?: Check; claudeIssue?: ClaudeIssue | null };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       if (data.demo) {
         const image = await demoPlace(room, chosen.map((p, i) => ({ image: productImages[i], category: p.category, spot: spots[p.id] })), m.demoTag);
-        setResult({ image, demo: true, check: null });
+        setResult({ image, demo: true, check: null, issue: null });
         toast(m.demo, "info");
       } else {
         const image = await alignTo(data.image!, room);
         const check = data.check ?? null;
-        setResult({ image, demo: false, check });
+        setResult({ image, demo: false, check, issue: check ? null : data.claudeIssue ?? null });
         const bad = check && (!check.structure_preserved || check.products.some((p) => !p.faithful));
         toast(bad ? m.driftToast : m.done, bad ? "error" : "success");
       }
@@ -212,6 +213,7 @@ export function PlaceDialog({
             <div className="overflow-hidden rounded-xl ring-1 ring-border">
               <CompareSlider key={result.image} before={room} after={result.image} labels={{ before: m.before, after: m.after }} />
             </div>
+            {result.issue && <ClaudeIssueNote issue={result.issue} />}
             {result.check && (
               <div className={cn("space-y-1.5 rounded-lg px-3 py-2 text-xs", result.check.structure_preserved ? "bg-muted" : "bg-destructive/10")}>
                 <p className={cn("flex items-start gap-1.5 font-medium", !result.check.structure_preserved && "text-destructive")}>

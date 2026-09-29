@@ -1,5 +1,21 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+/** Why a Claude step was skipped — surfaced in the UI so a bad key or missing model access is visible. */
+export type ClaudeIssue = { code: "no_key" | "auth" | "not_found" | "rate_limit" | "billing" | "refusal" | "error"; detail: string };
+
+function issueFrom(error: unknown): ClaudeIssue {
+  if (error instanceof Anthropic.APIError) {
+    const detail = error.message.slice(0, 200);
+    if (error.status === 401) return { code: "auth", detail };
+    if (error.status === 403) return { code: "auth", detail };
+    if (error.status === 404) return { code: "not_found", detail };
+    if (error.status === 429) return { code: "rate_limit", detail };
+    if (/credit|billing|balance/i.test(error.message)) return { code: "billing", detail };
+    return { code: "error", detail };
+  }
+  return { code: "error", detail: String(error).slice(0, 200) };
+}
+
 /**
  * Server-only: asks Claude to list the fixed architecture in a room photo
  * (openings, radiators, floor, camera view) so the image model can be told
@@ -28,8 +44,8 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export async function analyzeRoom(imageDataUrl: string): Promise<RoomAnalysis | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+export async function analyzeRoom(imageDataUrl: string, issues: ClaudeIssue[] = []): Promise<RoomAnalysis | null> {
+  if (!process.env.ANTHROPIC_API_KEY) { issues.push({ code: "no_key", detail: "ANTHROPIC_API_KEY is not set" }); return null; }
   const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/.exec(imageDataUrl);
   if (!match) return null;
 
@@ -60,14 +76,15 @@ export async function analyzeRoom(imageDataUrl: string): Promise<RoomAnalysis | 
       ],
     });
 
-    if (response.stop_reason === "refusal") return null;
+    if (response.stop_reason === "refusal") { issues.push({ code: "refusal", detail: response.stop_details?.category ?? "refused" }); return null; }
     const text = response.content.find((b) => b.type === "text");
     if (!text || text.type !== "text") return null;
     const parsed = JSON.parse(text.text) as RoomAnalysis;
     return { ...parsed, fixed_elements: parsed.fixed_elements.slice(0, 10) };
   } catch (error) {
-    if (error instanceof Anthropic.APIError) console.warn(`Room analysis skipped: ${error.status} ${error.message}`);
-    else console.warn("Room analysis skipped:", error);
+    const issue = issueFrom(error);
+    console.warn(`Room analysis skipped: ${issue.code} — ${issue.detail}`);
+    issues.push(issue);
     return null;
   }
 }
@@ -105,8 +122,8 @@ function imageBlock(dataUrl: string) {
  * reports whether the architecture survived. Pixel metrics can't tell staging
  * clutter from a redrawn room; this can. Null when unavailable.
  */
-export async function checkStaging(before: string, after: string): Promise<StagingCheck | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+export async function checkStaging(before: string, after: string, issues: ClaudeIssue[] = []): Promise<StagingCheck | null> {
+  if (!process.env.ANTHROPIC_API_KEY) { issues.push({ code: "no_key", detail: "ANTHROPIC_API_KEY is not set" }); return null; }
   const a = imageBlock(before);
   const b = imageBlock(after);
   if (!a || !b) return null;
@@ -140,14 +157,15 @@ export async function checkStaging(before: string, after: string): Promise<Stagi
       ],
     });
 
-    if (response.stop_reason === "refusal") return null;
+    if (response.stop_reason === "refusal") { issues.push({ code: "refusal", detail: response.stop_details?.category ?? "refused" }); return null; }
     const text = response.content.find((blk) => blk.type === "text");
     if (!text || text.type !== "text") return null;
     const parsed = JSON.parse(text.text) as StagingCheck;
     return { structure_preserved: parsed.structure_preserved, changes: parsed.changes.slice(0, 6) };
   } catch (error) {
-    if (error instanceof Anthropic.APIError) console.warn(`Staging check skipped: ${error.status} ${error.message}`);
-    else console.warn("Staging check skipped:", error);
+    const issue = issueFrom(error);
+    console.warn(`Staging check skipped: ${issue.code} — ${issue.detail}`);
+    issues.push(issue);
     return null;
   }
 }
@@ -191,8 +209,9 @@ export async function checkPlacement(
   before: string,
   after: string,
   products: { name: string; image: string }[],
+  issues: ClaudeIssue[] = [],
 ): Promise<PlacementCheck | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!process.env.ANTHROPIC_API_KEY) { issues.push({ code: "no_key", detail: "ANTHROPIC_API_KEY is not set" }); return null; }
   const a = imageBlock(before);
   const b = imageBlock(after);
   const productBlocks = products.map((p) => ({ name: p.name, block: imageBlock(p.image) }));
@@ -229,14 +248,15 @@ export async function checkPlacement(
       ],
     });
 
-    if (response.stop_reason === "refusal") return null;
+    if (response.stop_reason === "refusal") { issues.push({ code: "refusal", detail: response.stop_details?.category ?? "refused" }); return null; }
     const text = response.content.find((blk) => blk.type === "text");
     if (!text || text.type !== "text") return null;
     const parsed = JSON.parse(text.text) as PlacementCheck;
     return { ...parsed, changes: parsed.changes.slice(0, 6) };
   } catch (error) {
-    if (error instanceof Anthropic.APIError) console.warn(`Placement check skipped: ${error.status} ${error.message}`);
-    else console.warn("Placement check skipped:", error);
+    const issue = issueFrom(error);
+    console.warn(`Placement check skipped: ${issue.code} — ${issue.detail}`);
+    issues.push(issue);
     return null;
   }
 }

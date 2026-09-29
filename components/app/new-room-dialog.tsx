@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { CompareSlider } from "@/components/app/compare-slider";
+import { ClaudeIssueNote, type ClaudeIssue } from "@/components/app/claude-issue-note";
 import type { RoomStyle } from "@/components/room-scene";
 import { useLang } from "@/components/i18n/language-provider";
 import { roomLiving, roomBedroom, roomKitchen, roomStudy, roomKids, roomBath, styles } from "@/lib/demo/data";
@@ -26,7 +27,7 @@ export function NewRoomDialog({
   const [style, setStyle] = useState<RoomStyle>(defaultStyle ?? "iskandinav");
   const [place, setPlace] = useState("");
   const [mode, setMode] = useState<"furnish" | "renovate">("furnish");
-  const [result, setResult] = useState<{ image: string; demo: boolean; check: { structure_preserved: boolean; changes: string[] } | null; preserved: string[] } | null>(null);
+  const [result, setResult] = useState<{ image: string; demo: boolean; check: { structure_preserved: boolean; changes: string[] } | null; preserved: string[]; issue: ClaudeIssue | null } | null>(null);
   const [variant, setVariant] = useState(0);
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -98,17 +99,18 @@ export function NewRoomDialog({
       const data = (await res.json().catch(() => ({}))) as {
         demo?: boolean; image?: string; error?: string; preserved?: string[];
         check?: { structure_preserved: boolean; changes: string[] } | null;
+        claudeIssue?: ClaudeIssue | null;
       };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       if (data.demo) {
         const image = await demoRestyle(before, styleDef.palette, `${m.demoTag} · ${t(styleDef.name)}`, nextVariant);
-        setResult({ image, demo: true, check: null, preserved: [] });
+        setResult({ image, demo: true, check: null, preserved: [], issue: null });
         toast(m.demo, "info");
       } else {
         // Pixel-align the result to the upload so the slider lines up.
         const image = await alignTo(data.image!, before);
         const check = data.check ?? null;
-        setResult({ image, demo: false, check, preserved: data.preserved ?? [] });
+        setResult({ image, demo: false, check, preserved: data.preserved ?? [], issue: check ? null : data.claudeIssue ?? null });
         if (check && !check.structure_preserved) toast(m.driftToast, "error");
         else toast(m.done);
       }
@@ -158,6 +160,7 @@ export function NewRoomDialog({
             <CompareSlider key={result.image} before={before} after={result.image} labels={{ before: m.before, after: m.after }} />
           </div>
         ) : null}
+        {result && !result.demo && result.issue && <ClaudeIssueNote issue={result.issue} />}
         {result && before && !result.demo && (result.check || result.preserved.length > 0) && (
           <div
             className={cn(

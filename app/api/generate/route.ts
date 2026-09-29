@@ -1,5 +1,5 @@
 import { styles } from "@/lib/demo/data";
-import { analyzeRoom, checkStaging } from "@/lib/room-analysis";
+import { analyzeRoom, checkStaging, type ClaudeIssue } from "@/lib/room-analysis";
 
 /**
  * POST /api/generate — virtually stage a room photo while keeping the room.
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     return Response.json({ demo: true });
   }
 
-  const analysis = await analyzeRoom(image);
+  const issues: ClaudeIssue[] = [];
+  const analysis = await analyzeRoom(image, issues);
   const roomName = typeof room === "string" ? room.toLowerCase() : "room";
   const renovate = mode === "renovate";
 
@@ -83,8 +84,8 @@ export async function POST(req: Request) {
     const type = img.headers.get("content-type") ?? "image/jpeg";
     const b64 = Buffer.from(await img.arrayBuffer()).toString("base64");
     const result = `data:${type};base64,${b64}`;
-    const check = await checkStaging(image, result);
-    return Response.json({ demo: false, image: result, preserved: analysis?.fixed_elements ?? [], check });
+    const check = await checkStaging(image, result, issues);
+    return Response.json({ demo: false, image: result, preserved: analysis?.fixed_elements ?? [], check, claudeIssue: issues[0] ?? null });
   } catch {
     return Response.json({ error: "Could not reach the image service" }, { status: 502 });
   }

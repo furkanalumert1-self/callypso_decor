@@ -1,4 +1,4 @@
-import { analyzeRoom, checkPlacement } from "@/lib/room-analysis";
+import { analyzeRoom, checkPlacement, type ClaudeIssue } from "@/lib/room-analysis";
 import { categoryLabel, type ProductCategory } from "@/lib/demo/products";
 
 /**
@@ -77,7 +77,8 @@ export async function POST(req: Request) {
     return Response.json({ demo: true });
   }
 
-  const analysis = await analyzeRoom(room);
+  const issues: ClaudeIssue[] = [];
+  const analysis = await analyzeRoom(room, issues);
   const ratio = typeof aspect === "number" && aspect > 0 ? aspect : 4 / 3;
   const aspectRatio = RATIOS.reduce((best, r) => (Math.abs(Math.log(r[1] / ratio)) < Math.abs(Math.log(best[1] / ratio)) ? r : best))[0];
 
@@ -124,8 +125,8 @@ export async function POST(req: Request) {
     if (!img.ok) return Response.json({ error: `Could not download the result (${img.status})` }, { status: 502 });
     const type = img.headers.get("content-type") ?? "image/jpeg";
     const result = `data:${type};base64,${Buffer.from(await img.arrayBuffer()).toString("base64")}`;
-    const check = await checkPlacement(room, result, products.map((p) => ({ name: p.name, image: p.image as string })));
-    return Response.json({ demo: false, image: result, preserved: analysis?.fixed_elements ?? [], check });
+    const check = await checkPlacement(room, result, products.map((p) => ({ name: p.name, image: p.image as string })), issues);
+    return Response.json({ demo: false, image: result, preserved: analysis?.fixed_elements ?? [], check, claudeIssue: issues[0] ?? null });
   } catch {
     return Response.json({ error: "Could not reach the image service" }, { status: 502 });
   }
