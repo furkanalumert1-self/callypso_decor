@@ -9,6 +9,7 @@ import { useLang } from "@/components/i18n/language-provider";
 import { categoryLabel, type ProductCategory } from "@/lib/demo/products";
 import { createProduct, updateProduct, type Product } from "@/lib/data";
 import { fileToDataUrl } from "@/lib/image";
+import { guessCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = Object.keys(categoryLabel) as ProductCategory[];
@@ -22,7 +23,9 @@ export function ProductFormDialog({
   const [image, setImage] = useState(product?.image ?? "");
   const [name, setName] = useState(product?.name ?? "");
   const [sku, setSku] = useState(product?.sku ?? "");
-  const [category, setCategory] = useState<ProductCategory>(product?.category ?? "sofa");
+  const [category, setCategory] = useState<ProductCategory>(product?.category ?? "decor");
+  // New products: follow the name ("… Halı" → rug) until the user picks a category themselves.
+  const [categoryTouched, setCategoryTouched] = useState(!!product);
   const [price, setPrice] = useState(product ? String(product.price) : "");
   const [width, setWidth] = useState(product?.width ? String(product.width) : "");
   const [depth, setDepth] = useState(product?.depth ? String(product.depth) : "");
@@ -107,7 +110,15 @@ export function ProductFormDialog({
 
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{m.name}</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} className={field} required />
+          <input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (!categoryTouched) setCategory(guessCategory(e.target.value.replace(/[_-]+/g, " ")));
+            }}
+            className={field}
+            required
+          />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-1.5">
@@ -126,7 +137,7 @@ export function ProductFormDialog({
               <button
                 key={c}
                 type="button"
-                onClick={() => setCategory(c)}
+                onClick={() => { setCategory(c); setCategoryTouched(true); }}
                 className={cn("rounded-full px-3 py-1.5 text-[13px] font-medium transition", category === c ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground")}
               >
                 {t(categoryLabel[c])}

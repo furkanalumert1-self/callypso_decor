@@ -1,7 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /** Why a Claude step was skipped — surfaced in the UI so a bad key or missing model access is visible. */
-export type ClaudeIssue = { code: "no_key" | "auth" | "not_found" | "rate_limit" | "billing" | "refusal" | "error"; detail: string };
+export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "refusal" | "error"; detail: string };
+
+/**
+ * Anthropic client. Organisation-level keys (not created inside a workspace)
+ * need the workspace named on every request — set ANTHROPIC_WORKSPACE_ID
+ * (Console → Workspaces → the workspace's ID), or use a workspace-scoped key.
+ */
+function claudeClient() {
+  const workspace = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+  return new Anthropic(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {});
+}
 
 function issueFrom(error: unknown): ClaudeIssue {
   if (error instanceof Anthropic.APIError) {
@@ -11,6 +21,7 @@ function issueFrom(error: unknown): ClaudeIssue {
     if (error.status === 404) return { code: "not_found", detail };
     if (error.status === 429) return { code: "rate_limit", detail };
     if (/credit|billing|balance/i.test(error.message)) return { code: "billing", detail };
+    if (/workspace/i.test(error.message)) return { code: "workspace", detail };
     return { code: "error", detail };
   }
   return { code: "error", detail: String(error).slice(0, 200) };
@@ -50,7 +61,7 @@ export async function analyzeRoom(imageDataUrl: string, issues: ClaudeIssue[] = 
   if (!match) return null;
 
   try {
-    const client = new Anthropic();
+    const client = claudeClient();
     const response = await client.beta.messages.create({
       model: "claude-opus-5",
       max_tokens: 4000,
@@ -129,7 +140,7 @@ export async function checkStaging(before: string, after: string, issues: Claude
   if (!a || !b) return null;
 
   try {
-    const client = new Anthropic();
+    const client = claudeClient();
     const response = await client.beta.messages.create({
       model: "claude-opus-5",
       max_tokens: 4000,
@@ -218,7 +229,7 @@ export async function checkPlacement(
   if (!a || !b || productBlocks.some((p) => !p.block)) return null;
 
   try {
-    const client = new Anthropic();
+    const client = claudeClient();
     const response = await client.beta.messages.create({
       model: "claude-opus-5",
       max_tokens: 4000,
@@ -330,7 +341,7 @@ export async function planLayout(room: string, products: PlanProduct[], note: st
   };
 
   try {
-    const client = new Anthropic();
+    const client = claudeClient();
     const response = await client.beta.messages.create({
       model: "claude-opus-5",
       max_tokens: 6000,

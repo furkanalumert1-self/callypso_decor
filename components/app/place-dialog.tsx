@@ -10,7 +10,8 @@ import { ClaudeIssueNote, type ClaudeIssue } from "@/components/app/claude-issue
 import { useLang } from "@/components/i18n/language-provider";
 import { roomLiving } from "@/lib/demo/data";
 import { categoryLabel } from "@/lib/demo/products";
-import { createProject, useProducts, useProjects, type Product } from "@/lib/data";
+import { createProject, updateProduct, useProducts, useProjects, type Product } from "@/lib/data";
+import { guessCategory } from "@/lib/categories";
 import { alignTo, copyText, demoPlace, downloadImage, fileToDataUrl, imageAspect, toJpeg } from "@/lib/image";
 import { cn, formatTry } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ export function PlaceDialog({
       dlFail: "İndirme başarısız", badFile: "Lütfen 15 MB'den küçük bir görsel seç", kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş:",
       faithful: "katalogla uyumlu", unfaithful: "katalogdan farklı", driftToast: "Sonuç odayı ya da ürünleri değiştirmiş olabilir — yeniden üretmeyi dene",
       plannerClaude: "Yerleşim: Claude iç mimar planı", plannerRules: "Yerleşim: kurallı plan (Claude kullanılamadı)", cleanedN: (n: number) => `${n} ürün fotoğrafı temizlendi`,
+      catMismatch: (cur: string, guess: string) => `«${cur}» olarak kayıtlı, adına göre ${guess} olabilir — model yanlış eşya çizebilir.`, fixCat: (g: string) => `${g} yap`, catFixed: "Kategori güncellendi",
       demoTag: "Demo · ürün yerleştirme", place: "Ürün yerleştirme", summary: "Callypso Decor — ürün yerleştirme teklifi", noPrice: "Fiyat girilmedi",
     },
     en: {
@@ -69,6 +71,7 @@ export function PlaceDialog({
       dlFail: "Download failed", badFile: "Please pick an image under 15 MB", kept: "Room structure preserved", drift: "Room structure changed:",
       faithful: "matches catalogue", unfaithful: "differs from catalogue", driftToast: "The result may have changed the room or the products — try regenerating",
       plannerClaude: "Layout: planned by Claude", plannerRules: "Layout: rule-based (Claude unavailable)", cleanedN: (n: number) => `${n} product photos cleaned`,
+      catMismatch: (cur: string, guess: string) => `Saved as “${cur}”, but the name suggests ${guess} — the model may draw the wrong item.`, fixCat: (g: string) => `Make it ${g}`, catFixed: "Category updated",
       demoTag: "Demo · product placement", place: "Product placement", summary: "Callypso Decor — product placement quote", noPrice: "No price set",
     },
   }[lang];
@@ -364,15 +367,39 @@ export function PlaceDialog({
         {/* price list */}
         {chosen.length > 0 && (
           <div className="rounded-xl border border-border">
-            {chosen.map((p, i) => (
-              <div key={p.id} className="flex items-center gap-3 border-b border-border px-3 py-2 text-sm last:border-b-0">
-                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-bold">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  {p.name} <span className="text-xs text-muted-foreground">· {t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}</span>
-                </span>
-                <span className={cn("tabular-nums", p.price <= 0 && "text-xs text-muted-foreground")}>{p.price > 0 ? formatTry(p.price, lang) : m.noPrice}</span>
-              </div>
-            ))}
+            {chosen.map((p, i) => {
+              // the category drives what the image model draws — flag names that disagree with it
+              const guess = guessCategory(p.name.replace(/[_-]+/g, " "));
+              const mismatch = guess !== "decor" && guess !== p.category;
+              return (
+                <div key={p.id} className="border-b border-border px-3 py-2 text-sm last:border-b-0">
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-bold">{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {p.name} <span className="text-xs text-muted-foreground">· {t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}</span>
+                    </span>
+                    <span className={cn("tabular-nums", p.price <= 0 && "text-xs text-muted-foreground")}>{p.price > 0 ? formatTry(p.price, lang) : m.noPrice}</span>
+                  </div>
+                  {mismatch && (
+                    <div className="ml-8 mt-1 flex flex-wrap items-center gap-2 text-xs text-warning-foreground">
+                      <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-warning" />
+                      <span>{m.catMismatch(t(categoryLabel[p.category]), t(categoryLabel[guess]))}</span>
+                      <button
+                        type="button"
+                        className="rounded-full bg-warning/15 px-2 py-0.5 font-medium hover:bg-warning/25"
+                        onClick={async () => {
+                          await updateProduct(p.id, { category: guess });
+                          setResult(null);
+                          toast(m.catFixed);
+                        }}
+                      >
+                        {m.fixCat(t(categoryLabel[guess]))}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {total > 0 && (
               <div className="flex justify-between bg-muted/50 px-3 py-2 text-sm font-semibold">
                 <span>{m.total}</span>
