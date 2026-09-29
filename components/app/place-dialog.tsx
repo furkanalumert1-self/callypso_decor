@@ -42,7 +42,7 @@ export function PlaceDialog({
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [variant, setVariant] = useState(0);
-  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check; issue: ClaudeIssue | null } | null>(null);
+  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check; issue: ClaudeIssue | null; planner?: "claude" | "rules"; cleaned?: number } | null>(null);
 
   const m = {
     tr: {
@@ -55,6 +55,7 @@ export function PlaceDialog({
       needRoom: "Önce salon fotoğrafı yükle", needProduct: "En az bir ürün seç", saved: "Projelere kaydedildi", copied: "Teklif özeti panoya kopyalandı",
       dlFail: "İndirme başarısız", badFile: "Lütfen 15 MB'den küçük bir görsel seç", kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş:",
       faithful: "katalogla uyumlu", unfaithful: "katalogdan farklı", driftToast: "Sonuç odayı ya da ürünleri değiştirmiş olabilir — yeniden üretmeyi dene",
+      plannerClaude: "Yerleşim: Claude iç mimar planı", plannerRules: "Yerleşim: kurallı plan (Claude kullanılamadı)", cleanedN: (n: number) => `${n} ürün fotoğrafı temizlendi`,
       demoTag: "Demo · ürün yerleştirme", place: "Ürün yerleştirme", summary: "Callypso Decor — ürün yerleştirme teklifi", noPrice: "Fiyat girilmedi",
     },
     en: {
@@ -67,6 +68,7 @@ export function PlaceDialog({
       needRoom: "Upload a room photo first", needProduct: "Pick at least one product", saved: "Saved to projects", copied: "Quote summary copied",
       dlFail: "Download failed", badFile: "Please pick an image under 15 MB", kept: "Room structure preserved", drift: "Room structure changed:",
       faithful: "matches catalogue", unfaithful: "differs from catalogue", driftToast: "The result may have changed the room or the products — try regenerating",
+      plannerClaude: "Layout: planned by Claude", plannerRules: "Layout: rule-based (Claude unavailable)", cleanedN: (n: number) => `${n} product photos cleaned`,
       demoTag: "Demo · product placement", place: "Product placement", summary: "Callypso Decor — product placement quote", noPrice: "No price set",
     },
   }[lang];
@@ -143,7 +145,10 @@ export function PlaceDialog({
           })),
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { demo?: boolean; image?: string; error?: string; check?: Check; claudeIssue?: ClaudeIssue | null };
+      const data = (await res.json().catch(() => ({}))) as {
+        demo?: boolean; image?: string; error?: string; check?: Check; claudeIssue?: ClaudeIssue | null;
+        layout?: { planner: "claude" | "rules" }; cleanedProducts?: number;
+      };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       if (data.demo) {
         const image = await demoPlace(room, chosen.map((p, i) => ({ image: productImages[i], category: p.category, spot: spots[p.id] })), m.demoTag);
@@ -152,7 +157,7 @@ export function PlaceDialog({
       } else {
         const image = await alignTo(data.image!, room);
         const check = data.check ?? null;
-        setResult({ image, demo: false, check, issue: check ? null : data.claudeIssue ?? null });
+        setResult({ image, demo: false, check, issue: check ? null : data.claudeIssue ?? null, planner: data.layout?.planner, cleaned: data.cleanedProducts });
         const bad = check && (!check.structure_preserved || check.products.some((p) => !p.faithful));
         toast(bad ? m.driftToast : m.done, bad ? "error" : "success");
       }
@@ -213,6 +218,12 @@ export function PlaceDialog({
             <div className="overflow-hidden rounded-xl ring-1 ring-border">
               <CompareSlider key={result.image} before={room} after={result.image} labels={{ before: m.before, after: m.after }} />
             </div>
+            {result.planner && (
+              <p className="text-xs text-muted-foreground">
+                {result.planner === "claude" ? m.plannerClaude : m.plannerRules}
+                {result.cleaned ? ` · ${m.cleanedN(result.cleaned)}` : ""}
+              </p>
+            )}
             {result.issue && <ClaudeIssueNote issue={result.issue} />}
             {result.check && (
               <div className={cn("space-y-1.5 rounded-lg px-3 py-2 text-xs", result.check.structure_preserved ? "bg-muted" : "bg-destructive/10")}>
