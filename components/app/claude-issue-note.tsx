@@ -3,7 +3,7 @@
 import { Info } from "lucide-react";
 import { useLang } from "@/components/i18n/language-provider";
 
-export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "refusal" | "error"; detail: string };
+export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "unavailable" | "refusal" | "error"; detail: string };
 
 const TEXT: Record<ClaudeIssue["code"], { tr: string; en: string }> = {
   no_key: {
@@ -18,6 +18,10 @@ const TEXT: Record<ClaudeIssue["code"], { tr: string; en: string }> = {
   not_found: { tr: "Claude kontrolü yapılamadı — model bu Anthropic hesabında erişilebilir değil.", en: "Claude check failed — the model isn't available on this Anthropic account." },
   rate_limit: { tr: "Claude kontrolü yapılamadı — hız/kota sınırına takıldı, biraz sonra tekrar dene.", en: "Claude check failed — rate limit reached, try again shortly." },
   billing: { tr: "Claude kontrolü yapılamadı — Anthropic hesabında kredi yetersiz.", en: "Claude check failed — the Anthropic account is out of credit." },
+  unavailable: {
+    tr: "Claude kontrolü yapılamadı — Anthropic API'si hata döndürdü (5xx). Anahtar ayarı genelde doğrudur; birkaç dakika sonra tekrar dene, sürerse status.anthropic.com'a bak.",
+    en: "Claude check failed — the Anthropic API returned a server error (5xx). Your key setup is usually fine; retry in a few minutes and check status.anthropic.com if it persists.",
+  },
   refusal: { tr: "Claude bu görsel için kontrolü reddetti.", en: "Claude declined to check this image." },
   error: { tr: "Claude kontrolü beklenmeyen bir hatayla yapılamadı.", en: "Claude check failed with an unexpected error." },
 };

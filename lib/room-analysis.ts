@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /** Why a Claude step was skipped — surfaced in the UI so a bad key or missing model access is visible. */
-export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "refusal" | "error"; detail: string };
+export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "unavailable" | "refusal" | "error"; detail: string };
 
 /**
  * Anthropic client. Organisation-level keys (not created inside a workspace)
@@ -22,6 +22,7 @@ export function issueFrom(error: unknown): ClaudeIssue {
     if (error.status === 429) return { code: "rate_limit", detail };
     if (/credit|billing|balance/i.test(error.message)) return { code: "billing", detail };
     if (/workspace/i.test(error.message)) return { code: "workspace", detail };
+    if (typeof error.status === "number" && error.status >= 500) return { code: "unavailable", detail };
     return { code: "error", detail };
   }
   return { code: "error", detail: String(error).slice(0, 200) };
