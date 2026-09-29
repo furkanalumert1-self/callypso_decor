@@ -28,6 +28,8 @@ export interface Product {
   height?: number;        // cm
   image: string;          // data URL (product photo, ideally on a plain background)
   createdAt: string;
+  /** Where the product was imported from — re-importing updates instead of duplicating. */
+  source?: { type: "shopify"; id: string; url?: string | null };
 }
 
 const svg = (body: string) =>

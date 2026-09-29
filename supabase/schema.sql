@@ -84,3 +84,7 @@ create policy "products_select_own" on public.products for select using (auth.ui
 create policy "products_insert_own" on public.products for insert with check (auth.uid() = user_id);
 create policy "products_update_own" on public.products for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "products_delete_own" on public.products for delete using (auth.uid() = user_id);
+
+-- ── Shopify import ─────────────────────────────────────────────────────────
+alter table public.products add column if not exists source jsonb;   -- { type: 'shopify', id, url }
+create unique index if not exists products_user_source_idx on public.products (user_id, (source->>'id')) where source is not null;

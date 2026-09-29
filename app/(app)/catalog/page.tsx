@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Sofa, MoreHorizontal, Pencil, Trash2, Wand2 } from "lucide-react";
+import { Plus, Search, Sofa, MoreHorizontal, Pencil, Trash2, Wand2, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Menu } from "@/components/ui/menu";
 import { toast } from "@/components/ui/toast";
 import { PlaceDialog } from "@/components/app/place-dialog";
 import { ProductFormDialog } from "@/components/app/product-form-dialog";
+import { ShopifyImportDialog } from "@/components/app/shopify-import-dialog";
 import { useLang } from "@/components/i18n/language-provider";
 import { categoryLabel, type ProductCategory } from "@/lib/demo/products";
 import { deleteProduct, useProducts, type Product } from "@/lib/data";
@@ -21,18 +22,19 @@ export default function CatalogPage() {
   const [form, setForm] = useState<{ product: Product | null } | null>(null);
   const [placing, setPlacing] = useState<string[] | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const m = {
     tr: {
       title: "Katalog", sub: "Mobilya firmanın ürünleri. Bir ürünü müşterinin salon fotoğrafına birebir yerleştir, teklifi paylaş.",
-      add: "Ürün ekle", place: "Salona yerleştir", search: "Ürün adı ya da SKU ara…", all: "Tümü", actions: "İşlemler",
+      add: "Ürün ekle", shopify: "Shopify'dan içe aktar", place: "Salona yerleştir", search: "Ürün adı ya da SKU ara…", all: "Tümü", actions: "İşlemler",
       edit: "Düzenle", del: "Sil", delTitle: "Ürün silinsin mi?", delBody: "Ürün katalogdan kalıcı olarak kaldırılacak.", cancel: "Vazgeç",
       deleted: "Ürün silindi", emptyTitle: "Katalog boş", emptyBody: "İlk ürününü fotoğraf, fiyat ve ölçüleriyle ekle.",
       noMatch: "Eşleşen ürün yok", clear: "Filtreleri temizle", noPrice: "Fiyat yok",
     },
     en: {
       title: "Catalogue", sub: "Your furniture products. Place any of them exactly as they are into a customer's room photo and share the quote.",
-      add: "Add product", place: "Place in room", search: "Search name or SKU…", all: "All", actions: "Actions",
+      add: "Add product", shopify: "Import from Shopify", place: "Place in room", search: "Search name or SKU…", all: "All", actions: "Actions",
       edit: "Edit", del: "Delete", delTitle: "Delete this product?", delBody: "The product will be permanently removed from the catalogue.", cancel: "Cancel",
       deleted: "Product deleted", emptyTitle: "Catalogue is empty", emptyBody: "Add your first product with a photo, price and dimensions.",
       noMatch: "No matching products", clear: "Clear filters", noPrice: "No price",
@@ -54,7 +56,8 @@ export default function CatalogPage() {
           <h1 className="font-display text-3xl font-semibold tracking-tight">{m.title}</h1>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">{m.sub}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => setImporting(true)}><Store className="h-4 w-4" /> {m.shopify}</Button>
           <Button variant="outline" className="gap-2" onClick={() => setForm({ product: null })}><Plus className="h-4 w-4" /> {m.add}</Button>
           <Button className="gap-2" onClick={() => setPlacing([])} disabled={!products.length}><Wand2 className="h-4 w-4" /> {m.place}</Button>
         </div>
@@ -111,7 +114,16 @@ export default function CatalogPage() {
                     ]}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">{t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {t(categoryLabel[p.category])}{p.sku ? ` · ${p.sku}` : ""}
+                  {p.source?.type === "shopify" && (
+                    p.source.url ? (
+                      <a href={p.source.url} target="_blank" rel="noreferrer" className="ml-1.5 rounded-full bg-success/12 px-1.5 py-0.5 text-[10px] font-medium text-success hover:underline">Shopify ↗</a>
+                    ) : (
+                      <span className="ml-1.5 rounded-full bg-success/12 px-1.5 py-0.5 text-[10px] font-medium text-success">Shopify</span>
+                    )
+                  )}
+                </p>
                 <div className="flex items-center justify-between pt-1">
                   {p.price > 0 ? (
                     <span className="font-display text-base font-semibold tabular-nums">{formatTry(p.price, lang)}</span>
@@ -140,6 +152,7 @@ export default function CatalogPage() {
       )}
 
       {form && <ProductFormDialog key={form.product?.id ?? "new"} open onClose={() => setForm(null)} product={form.product} />}
+      {importing && <ShopifyImportDialog open onClose={() => setImporting(false)} />}
       {placing && <PlaceDialog open onClose={() => setPlacing(null)} initialProductIds={placing} />}
       <Dialog open={!!deleting} onClose={() => setDeleting(null)} title={m.delTitle}>
         <div className="space-y-4 p-5">

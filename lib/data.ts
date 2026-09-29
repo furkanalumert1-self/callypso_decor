@@ -104,17 +104,19 @@ const fromRow = (r: Row): Project => ({
 type ProductRow = {
   id: string; name: string; sku: string; category: Product["category"]; price: number;
   width: number | null; depth: number | null; height: number | null; image: string; created_at: string;
+  source: Product["source"] | null;
 };
 
 const fromProductRow = (r: ProductRow): Product => ({
   id: r.id, name: r.name, sku: r.sku, category: r.category, price: Number(r.price),
   width: r.width ?? undefined, depth: r.depth ?? undefined, height: r.height ?? undefined, image: r.image, createdAt: r.created_at,
+  source: r.source ?? undefined,
 });
 
 const toProductRow = (p: Partial<NewProduct>) => ({
   ...(p.name !== undefined && { name: p.name }), ...(p.sku !== undefined && { sku: p.sku }),
   ...(p.category !== undefined && { category: p.category }), ...(p.price !== undefined && { price: p.price }),
-  ...(p.image !== undefined && { image: p.image }),
+  ...(p.image !== undefined && { image: p.image }), ...(p.source !== undefined && { source: p.source }),
   ...("width" in p && { width: p.width ?? null }), ...("depth" in p && { depth: p.depth ?? null }), ...("height" in p && { height: p.height ?? null }),
 });
 
@@ -251,6 +253,30 @@ export async function deleteProduct(id: string) {
   }
   const store = readLocal();
   writeLocal({ ...store, products: store.products.filter((p) => p.id !== id) });
+}
+
+/**
+ * Add or refresh imported products: a product whose `source.id` is already in
+ * the catalogue is updated in place, the rest are created.
+ */
+export async function importProducts(items: NewProduct[]): Promise<{ created: number; updated: number; persisted: boolean }> {
+  const existing = await listProducts();
+  const bySource = new Map(existing.filter((p) => p.source).map((p) => [p.source!.id, p]));
+  let created = 0;
+  let updated = 0;
+  let persisted = true;
+  for (const item of items) {
+    const match = item.source && bySource.get(item.source.id);
+    if (match) {
+      await updateProduct(match.id, item);
+      updated++;
+    } else {
+      const res = await createProduct(item);
+      persisted &&= res.persisted;
+      created++;
+    }
+  }
+  return { created, updated, persisted };
 }
 
 /* ── Gallery likes (always local — the gallery is sample content) ─────────── */

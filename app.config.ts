@@ -99,6 +99,7 @@ export const appConfig: AppConfig = {
     { key: "fal", name: "fal.ai", envVars: ["FAL_KEY"], required: false, docsUrl: "https://fal.ai/dashboard/keys", purpose: "Generates the restyled / renovated before-after room visuals (image generation)." },
     { key: "anthropic", name: "Anthropic", envVars: ["ANTHROPIC_API_KEY"], required: false, docsUrl: "https://console.anthropic.com/settings/keys", purpose: "Writes style guidance, room descriptions and shopping suggestions." },
     { key: "supabase", name: "Supabase", envVars: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"], required: false, docsUrl: "https://supabase.com/dashboard/project/_/settings/api", purpose: "Stores projects, rooms and saved looks. Without it, runs in demo mode." },
+    { key: "shopify", name: "Shopify", envVars: ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_ADMIN_ACCESS_TOKEN"], required: false, docsUrl: "https://help.shopify.com/en/manual/apps/app-types/custom-apps", purpose: "Imports your store's active products (photo, SKU, price) into the furniture catalogue." },
   ],
 };
 
