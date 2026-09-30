@@ -4,7 +4,7 @@
  */
 import type { L } from "@/lib/i18n/config";
 
-export type ProductCategory = "sofa" | "armchair" | "table" | "rug" | "lamp" | "storage" | "bed" | "decor";
+export type ProductCategory = "sofa" | "armchair" | "table" | "rug" | "lamp" | "storage" | "bed" | "art" | "decor";
 
 export const categoryLabel: Record<ProductCategory, L> = {
   sofa: { tr: "Kanepe", en: "Sofa" },
@@ -14,6 +14,7 @@ export const categoryLabel: Record<ProductCategory, L> = {
   lamp: { tr: "Aydınlatma", en: "Lighting" },
   storage: { tr: "Depolama / TV ünitesi", en: "Storage" },
   bed: { tr: "Yatak", en: "Bed" },
+  art: { tr: "Tablo / Duvar dekoru", en: "Wall art" },
   decor: { tr: "Dekor", en: "Decor" },
 };
 

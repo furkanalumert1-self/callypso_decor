@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { Box } from "@/lib/compose";
 
 /** Why a Claude step was skipped — surfaced in the UI so a bad key or missing model access is visible. */
 export type ClaudeIssue = { code: "no_key" | "auth" | "workspace" | "not_found" | "rate_limit" | "billing" | "unavailable" | "refusal" | "error"; detail: string };
@@ -276,7 +277,7 @@ export async function checkPlacement(
 export interface LayoutPlan {
   fixed_elements: string[];
   composition: string;
-  items: { name: string; placement: string }[];
+  items: { name: string; placement: string; box: Box }[];
 }
 
 const LAYOUT_SCHEMA = {
@@ -301,10 +302,18 @@ const LAYOUT_SCHEMA = {
           placement: {
             type: "string",
             description:
-              "Precise English placement for an image model: which wall or area (named by visible features such as 'the long wall with textured wallpaper on the right' or 'below the window'), orientation (what it faces), alignment/centring and distance relative to the other products.",
+              "Precise English placement: which wall or area (named by visible features such as 'the long wall with textured wallpaper on the right' or 'below the window'), orientation (what it faces), alignment/centring and distance relative to the other products.",
+          },
+          box: {
+            type: "object",
+            description:
+              "Where the item appears in the room photo, as fractions of the photo (0–1). cx: horizontal centre. bottom: y of the line where the item touches the floor (for wall art: its lower frame edge on the wall; for a rug: its front edge nearest the camera). width: its apparent width in the photo as a fraction of the photo width, consistent with its real dimensions and its depth in the room (farther = smaller).",
+            properties: { cx: { type: "number" }, bottom: { type: "number" }, width: { type: "number" } },
+            required: ["cx", "bottom", "width"],
+            additionalProperties: false,
           },
         },
-        required: ["name", "placement"],
+        required: ["name", "placement", "box"],
         additionalProperties: false,
       },
     },
@@ -315,7 +324,10 @@ const LAYOUT_SCHEMA = {
 
 export interface PlanProduct {
   name: string;
+  /** ProductCategory code ("sofa", "art", …) */
   category: string;
+  /** human-readable English category for prompts ("wall art") */
+  label?: string;
   width?: number;
   depth?: number;
   height?: number;
@@ -338,7 +350,7 @@ export async function planLayout(room: string, products: PlanProduct[], note: st
   const describe = (p: PlanProduct, i: number) => {
     const dims = [p.width && `${p.width} cm wide`, p.depth && `${p.depth} cm deep`, p.height && `${p.height} cm high`].filter(Boolean).join(", ");
     const pin = p.spot ? ` The user marked its spot at ${Math.round(p.spot.x * 100)}% from the left, ${Math.round(p.spot.y * 100)}% from the top of the room photo — respect it.` : "";
-    return `Product ${i + 1}: "${p.name}" (${p.category}${dims ? `, ${dims}` : ""}).${pin}`;
+    return `Product ${i + 1}: "${p.name}" (${p.label ?? p.category}${dims ? `, ${dims}` : ""}).${pin}`;
   };
 
   try {
@@ -365,7 +377,8 @@ export async function planLayout(room: string, products: PlanProduct[], note: st
                 "large pieces with their backs against a real wall (never floating diagonally), centred on that wall or on a clear axis of the room, facing into the room; " +
                 "a rug laid flat as a straight rectangle parallel to the walls, centred on the seating group with the front legs of the seating on it; " +
                 "tables centred on the sofa; armchairs placed symmetrically; keep doorways, the balcony door and walkways clear; respect real scale from the dimensions. " +
-                "Describe placements using features visible in the photo so the image model can find them." +
+                "Describe placements using features visible in the photo. The products will be cut out and pasted at your boxes, so the boxes must be accurate: " +
+                "estimate the room's scale from features of known size (doors ≈ 80–90 cm wide and 200 cm high, radiators, windows, floor boards), keep large pieces' bottoms on the floor line of the wall they stand against, put wall art on a wall at eye level (e.g. centred above the sofa), and keep boxes inside the photo and off doorways." +
                 (note.trim() ? ` The user's note (may be Turkish), use it as guidance but never add extra items: ${note.trim().slice(0, 300)}` : ""),
             },
           ],
@@ -377,7 +390,13 @@ export async function planLayout(room: string, products: PlanProduct[], note: st
     if (!text || text.type !== "text") return null;
     const plan = JSON.parse(text.text) as LayoutPlan;
     if (plan.items.length !== products.length) return null;
-    return { ...plan, fixed_elements: plan.fixed_elements.slice(0, 10) };
+    const fb = fallbackLayout(products).items;
+    return {
+      ...plan,
+      fixed_elements: plan.fixed_elements.slice(0, 10),
+      // sanity-check each box; fall back to the rule-based one if it's nonsense
+      items: plan.items.map((it, i) => ({ ...it, box: validBox(it.box) ? clampBox(it.box) : fb[i].box })),
+    };
   } catch (error) {
     const issue = issueFrom(error);
     console.warn(`Layout planning skipped: ${issue.code} — ${issue.detail}`);
@@ -386,31 +405,52 @@ export async function planLayout(room: string, products: PlanProduct[], note: st
   }
 }
 
-/** Designer rules used when Claude can't plan: one balanced group, rug under it, backs to a wall. */
+const validBox = (b?: Box) =>
+  !!b && [b.cx, b.bottom, b.width].every((v) => typeof v === "number" && Number.isFinite(v)) && b.width > 0.02 && b.width < 1 && b.bottom > 0.05 && b.bottom <= 1.05;
+const clampBox = (b: Box): Box => ({ cx: Math.min(0.97, Math.max(0.03, b.cx)), bottom: Math.min(1, Math.max(0.08, b.bottom)), width: Math.min(0.9, b.width) });
+
+/**
+ * Designer rules used when Claude can't plan: one balanced group — the main
+ * piece against the back wall, rug in front of and under it, table centred on
+ * it, armchair across the rug, art above it. Pins override positions.
+ */
 export function fallbackLayout(products: PlanProduct[]): LayoutPlan {
   const has = (c: string) => products.some((p) => p.category === c);
-  const seat = has("sofa") ? "the sofa" : has("bed") ? "the bed" : has("armchair") ? "the armchair" : null;
-  const where = (p: PlanProduct) => {
-    if (p.spot) {
-      const x = p.spot.x, y = p.spot.y;
-      const side = x < 0.33 ? "on the left side of the room" : x > 0.66 ? "on the right side of the room" : "in the centre of the room";
-      const depth = y < 0.55 ? "towards the back wall" : y > 0.78 ? "in the foreground" : "in the middle of the floor";
-      return `${side}, ${depth} (the user marked about ${Math.round(x * 100)}% from the left, ${Math.round(y * 100)}% from the top), backs of large pieces against the nearest wall`;
-    }
+  const anchorCat = ["sofa", "bed", "storage", "armchair"].find(has) ?? null;
+  const anchorProduct = anchorCat ? products.find((p) => p.category === anchorCat)! : null;
+  const anchor: Box = anchorProduct?.spot
+    ? { cx: anchorProduct.spot.x, bottom: anchorProduct.spot.y, width: 0.4 }
+    : { cx: 0.5, bottom: 0.7, width: anchorCat === "bed" ? 0.48 : anchorCat === "armchair" ? 0.2 : 0.4 };
+  const seat = anchorCat === "sofa" ? "the sofa" : anchorCat === "bed" ? "the bed" : anchorCat ? `the ${anchorCat}` : null;
+  const depthScale = (bottom: number) => Math.min(1.3, Math.max(0.6, bottom / 0.72));
+
+  const place = (p: PlanProduct): { placement: string; box: Box } => {
+    const pinned = (w: number): Box | null => (p.spot ? { cx: p.spot.x, bottom: p.spot.y, width: w * depthScale(p.spot.y) } : null);
     switch (p.category) {
-      case "sofa": return "centred against the largest free wall that has no door or window, its back touching the wall, facing into the room";
-      case "bed": return "headboard centred against the largest free wall, facing into the room";
-      case "storage": return seat ? `centred on the wall opposite ${seat}, facing it` : "centred against a free wall, facing into the room";
-      case "armchair": return has("sofa") ? "at an angle facing the sofa, on the side of the rug away from the doorway, balancing the group" : "against a free wall near the window, facing into the room";
-      case "table": return seat ? `centred in front of ${seat}, parallel to it, with a comfortable gap` : "centred in the open floor area";
-      case "rug": return seat ? `flat, a straight rectangle parallel to the walls, centred on ${seat} with its front legs on the rug` : "flat, centred in the open floor area, parallel to the walls";
-      case "lamp": return seat ? `beside ${seat}, in the corner` : "in a corner near the seating";
-      default: return seat ? `near ${seat}` : "where it naturally belongs";
+      case "sofa": case "bed": case "storage":
+        if (p === anchorProduct) return { placement: `${p.spot ? "at the marked spot" : "centred against the back wall"}, its back to the wall, facing into the room`, box: anchor };
+        return { placement: "against a free side wall, facing the main seating", box: pinned(0.3) ?? { cx: anchor.cx > 0.5 ? 0.18 : 0.82, bottom: anchor.bottom + 0.06, width: 0.3 } };
+      case "armchair":
+        if (p === anchorProduct) return { placement: "against a free wall, facing into the room", box: anchor };
+        return { placement: seat ? `across the rug from ${seat}, angled towards it` : "near the window, facing into the room", box: pinned(0.2) ?? { cx: anchor.cx > 0.5 ? anchor.cx - 0.36 : anchor.cx + 0.36, bottom: anchor.bottom + 0.1, width: 0.2 * depthScale(anchor.bottom + 0.1) } };
+      case "table":
+        return { placement: seat ? `centred in front of ${seat}` : "centred in the open floor area", box: pinned(0.22) ?? { cx: anchor.cx, bottom: anchor.bottom + 0.12, width: anchor.width * 0.5 } };
+      case "rug":
+        return { placement: seat ? `flat on the floor, centred on ${seat}, extending in front of it` : "flat, centred in the open floor area", box: pinned(0.5) ?? { cx: anchor.cx, bottom: Math.min(0.98, anchor.bottom + 0.22), width: Math.min(0.8, anchor.width * 1.25) } };
+      case "art":
+        return { placement: seat ? `on the wall, centred above ${seat}` : "on a free wall at eye level", box: p.spot ? { cx: p.spot.x, bottom: p.spot.y, width: 0.16 } : { cx: anchor.cx, bottom: anchor.bottom - 0.3, width: Math.min(0.24, anchor.width * 0.45) } };
+      case "lamp":
+        return { placement: seat ? `beside ${seat}` : "in a corner", box: pinned(0.07) ?? { cx: Math.min(0.95, anchor.cx + anchor.width / 2 + 0.05), bottom: anchor.bottom + 0.01, width: 0.07 } };
+      default:
+        return { placement: seat ? `near ${seat}` : "where it naturally belongs", box: pinned(0.1) ?? { cx: Math.max(0.05, anchor.cx - anchor.width / 2 - 0.06), bottom: anchor.bottom + 0.02, width: 0.1 } };
     }
   };
   return {
     fixed_elements: [],
-    composition: "One balanced, symmetrical furniture group centred on a clear axis of the room; nothing floats diagonally in the middle of the floor; doorways and walkways stay clear.",
-    items: products.map((p) => ({ name: p.name, placement: where(p) })),
+    composition: "One balanced furniture group on a clear axis of the room; nothing floats diagonally in the middle of the floor; doorways and walkways stay clear.",
+    items: products.map((p) => {
+      const { placement, box } = place(p);
+      return { name: p.name, placement, box: clampBox(box) };
+    }),
   };
 }

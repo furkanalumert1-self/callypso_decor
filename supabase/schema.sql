@@ -62,7 +62,7 @@ create table if not exists public.products (
   user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
   name        text not null,
   sku         text not null default '',
-  category    text not null check (category in ('sofa','armchair','table','rug','lamp','storage','bed','decor')),
+  category    text not null check (category in ('sofa','armchair','table','rug','lamp','storage','bed','art','decor')),
   price       numeric(12,2) not null default 0,                -- TRY
   width       int,                                             -- cm
   depth       int,
@@ -88,3 +88,8 @@ create policy "products_delete_own" on public.products for delete using (auth.ui
 -- ── Shopify import ─────────────────────────────────────────────────────────
 alter table public.products add column if not exists source jsonb;   -- { type: 'shopify', id, url }
 create unique index if not exists products_user_source_idx on public.products (user_id, (source->>'id')) where source is not null;
+
+-- ── Wall-art category (re-run safe; widens the check on existing tables) ────
+alter table public.products drop constraint if exists products_category_check;
+alter table public.products add constraint products_category_check
+  check (category in ('sofa','armchair','table','rug','lamp','storage','bed','art','decor'));

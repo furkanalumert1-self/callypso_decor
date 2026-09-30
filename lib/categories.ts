@@ -6,6 +6,7 @@ import type { ProductCategory } from "@/lib/demo/products";
  * "halısı"); text is lower-cased with Turkish rules (İ→i, I→ı).
  */
 const CATEGORY_WORDS: [ProductCategory, string[]][] = [
+  ["art", ["tablo", "kanvas", "poster", "duvar dekor", "duvar sanat", "ayna", "painting", "canvas", "wall art", "mirror", "artwork"]],
   ["rug", ["halı", "hali", "kilim", "rug", "carpet"]],
   ["lamp", ["lamba", "lambader", "aydınlatma", "aydinlatma", "abajur", "avize", "lamp", "lighting", "chandelier", "sconce"]],
   ["bed", ["yatak", "baza", "karyola", "bed", "headboard"]],

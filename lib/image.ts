@@ -179,7 +179,7 @@ function cutout(img: HTMLImageElement, w: number, h: number): HTMLCanvasElement 
 }
 
 /** Share of the room photo's width a product of this category roughly takes up. */
-const DEMO_WIDTH: Record<string, number> = { sofa: 0.4, bed: 0.45, rug: 0.5, storage: 0.3, table: 0.22, armchair: 0.17, lamp: 0.08, decor: 0.08 };
+const DEMO_WIDTH: Record<string, number> = { art: 0.16, sofa: 0.4, bed: 0.45, rug: 0.5, storage: 0.3, table: 0.22, armchair: 0.17, lamp: 0.08, decor: 0.08 };
 
 /**
  * Demo placement without an AI key: composites each catalogue photo into the

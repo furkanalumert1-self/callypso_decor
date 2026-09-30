@@ -43,7 +43,7 @@ export function PlaceDialog({
   const [pending, setPending] = useState(false);
   const [saving, setSaving] = useState(false);
   const [variant, setVariant] = useState(0);
-  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check; issue: ClaudeIssue | null; planner?: "claude" | "rules"; cleaned?: number } | null>(null);
+  const [result, setResult] = useState<{ image: string; demo: boolean; check: Check; issue: ClaudeIssue | null; planner?: "claude" | "rules"; cleaned?: number; harmonized?: boolean } | null>(null);
 
   const m = {
     tr: {
@@ -56,6 +56,7 @@ export function PlaceDialog({
       needRoom: "Önce salon fotoğrafı yükle", needProduct: "En az bir ürün seç", saved: "Projelere kaydedildi", copied: "Teklif özeti panoya kopyalandı",
       dlFail: "İndirme başarısız", badFile: "Lütfen 15 MB'den küçük bir görsel seç", kept: "Oda yapısı korundu", drift: "Oda yapısı değişmiş:",
       faithful: "katalogla uyumlu", unfaithful: "katalogdan farklı", driftToast: "Sonuç odayı ya da ürünleri değiştirmiş olabilir — yeniden üretmeyi dene",
+      notHarmonized: "Işık/gölge uyumlandırması yapılamadı — ürünlerin yerleşim önizlemesi gösteriliyor. Yeniden üretmeyi dene.",
       plannerClaude: "Yerleşim: Claude iç mimar planı", plannerRules: "Yerleşim: kurallı plan (Claude kullanılamadı)", cleanedN: (n: number) => `${n} ürün fotoğrafı temizlendi`,
       catMismatch: (cur: string, guess: string) => `«${cur}» olarak kayıtlı, adına göre ${guess} olabilir — model yanlış eşya çizebilir.`, fixCat: (g: string) => `${g} yap`, catFixed: "Kategori güncellendi",
       demoTag: "Demo · ürün yerleştirme", place: "Ürün yerleştirme", summary: "Callypso Decor — ürün yerleştirme teklifi", noPrice: "Fiyat girilmedi",
@@ -70,6 +71,7 @@ export function PlaceDialog({
       needRoom: "Upload a room photo first", needProduct: "Pick at least one product", saved: "Saved to projects", copied: "Quote summary copied",
       dlFail: "Download failed", badFile: "Please pick an image under 15 MB", kept: "Room structure preserved", drift: "Room structure changed:",
       faithful: "matches catalogue", unfaithful: "differs from catalogue", driftToast: "The result may have changed the room or the products — try regenerating",
+      notHarmonized: "Lighting/shadow harmonisation failed — showing the placement preview. Try regenerating.",
       plannerClaude: "Layout: planned by Claude", plannerRules: "Layout: rule-based (Claude unavailable)", cleanedN: (n: number) => `${n} product photos cleaned`,
       catMismatch: (cur: string, guess: string) => `Saved as “${cur}”, but the name suggests ${guess} — the model may draw the wrong item.`, fixCat: (g: string) => `Make it ${g}`, catFixed: "Category updated",
       demoTag: "Demo · product placement", place: "Product placement", summary: "Callypso Decor — product placement quote", noPrice: "No price set",
@@ -150,7 +152,7 @@ export function PlaceDialog({
       });
       const data = (await res.json().catch(() => ({}))) as {
         demo?: boolean; image?: string; error?: string; check?: Check; claudeIssue?: ClaudeIssue | null;
-        layout?: { planner: "claude" | "rules" }; cleanedProducts?: number;
+        layout?: { planner: "claude" | "rules" }; cleanedProducts?: number; harmonized?: boolean;
       };
       if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
       if (data.demo) {
@@ -160,7 +162,7 @@ export function PlaceDialog({
       } else {
         const image = await alignTo(data.image!, room);
         const check = data.check ?? null;
-        setResult({ image, demo: false, check, issue: check ? null : data.claudeIssue ?? null, planner: data.layout?.planner, cleaned: data.cleanedProducts });
+        setResult({ image, demo: false, check, issue: check ? null : data.claudeIssue ?? null, planner: data.layout?.planner, cleaned: data.cleanedProducts, harmonized: data.harmonized });
         const bad = check && (!check.structure_preserved || check.products.some((p) => !p.faithful));
         toast(bad ? m.driftToast : m.done, bad ? "error" : "success");
       }
@@ -225,6 +227,11 @@ export function PlaceDialog({
               <p className="text-xs text-muted-foreground">
                 {result.planner === "claude" ? m.plannerClaude : m.plannerRules}
                 {result.cleaned ? ` · ${m.cleanedN(result.cleaned)}` : ""}
+              </p>
+            )}
+            {result.harmonized === false && (
+              <p className="flex items-start gap-1.5 rounded-lg bg-warning/15 px-3 py-2 text-xs text-warning-foreground">
+                <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {m.notHarmonized}
               </p>
             )}
             {result.issue && <ClaudeIssueNote issue={result.issue} />}

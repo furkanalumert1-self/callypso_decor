@@ -11,27 +11,37 @@ import sharp from "sharp";
  */
 const MODEL = "fal-ai/birefnet/v2";
 
-export async function cleanProductImage(dataUrl: string): Promise<{ image: string; cleaned: boolean }> {
+export interface CleanedProduct {
+  /** Product on white, JPEG data URL (for the image model / checks). */
+  image: string;
+  /** Transparent cut-out (PNG) cropped to the product, for compositing; null if cleaning failed. */
+  cutout: Buffer | null;
+  cleaned: boolean;
+}
+
+export async function cleanProductImage(dataUrl: string): Promise<CleanedProduct> {
   const key = process.env.FAL_KEY;
-  if (!key) return { image: dataUrl, cleaned: false };
+  const original = { image: dataUrl, cutout: null, cleaned: false };
+  if (!key) return original;
   try {
     const res = await fetch(`https://fal.run/${MODEL}`, {
       method: "POST",
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({ image_url: dataUrl, model: "General Use (Heavy)", output_format: "png", refine_foreground: true }),
     });
-    if (!res.ok) return { image: dataUrl, cleaned: false };
+    if (!res.ok) return original;
     const url = ((await res.json()) as { image?: { url?: string } }).image?.url;
-    if (!url) return { image: dataUrl, cleaned: false };
+    if (!url) return original;
     const png = Buffer.from(await (await fetch(url)).arrayBuffer());
-    return { image: await isolateLargestObject(png), cleaned: true };
+    const { jpeg, cutout } = await isolateLargestObject(png);
+    return { image: jpeg, cutout, cleaned: true };
   } catch {
-    return { image: dataUrl, cleaned: false };
+    return original;
   }
 }
 
-/** Crop a transparent PNG to its largest opaque component and flatten onto white. */
-export async function isolateLargestObject(png: Buffer): Promise<string> {
+/** Crop a transparent PNG to its largest opaque component → { flattened JPEG data URL, transparent PNG cut-out }. */
+export async function isolateLargestObject(png: Buffer): Promise<{ jpeg: string; cutout: Buffer }> {
   const img = sharp(png).ensureAlpha();
   const { width = 0, height = 0 } = await img.metadata();
   if (!width || !height) throw new Error("empty image");
@@ -96,11 +106,11 @@ export async function isolateLargestObject(png: Buffer): Promise<string> {
   const right = Math.min(width, Math.ceil(((best.x1 + 1) / scale) + width * pad));
   const bottom = Math.min(height, Math.ceil(((best.y1 + 1) / scale) + height * pad));
 
-  const out = await sharp(rgba, { raw: { width, height, channels: 4 } })
+  const cutout = await sharp(rgba, { raw: { width, height, channels: 4 } })
     .extract({ left, top, width: right - left, height: bottom - top })
-    .flatten({ background: "#ffffff" })
     .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 90 })
+    .png()
     .toBuffer();
-  return `data:image/jpeg;base64,${out.toString("base64")}`;
+  const jpeg = await sharp(cutout).flatten({ background: "#ffffff" }).jpeg({ quality: 90 }).toBuffer();
+  return { jpeg: `data:image/jpeg;base64,${jpeg.toString("base64")}`, cutout };
 }
